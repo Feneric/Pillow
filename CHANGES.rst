@@ -4,6 +4,15 @@ Changelog (Pillow)
 2.6.0 (unreleased)
 ------------------
 
+- Return Profile with Transformed Images #837
+  [wiredfool]
+
+- Changed docstring to refer to the correct function #836
+  [MatMoore]
+
+- Adding coverage support for C code tests #833
+  [wiredfool]
+
 - PyPy performance improvements #821
   [wiredfool]
 
@@ -31,7 +40,7 @@ Changelog (Pillow)
 - Added docs for ExifTags
   [Wintermute3]
 
-- More tests for CurImagePlugin, DcxImagePlugin, ImageFont, ImageMath, ImagePalette, SpiderImagePlugin, SgiImagePlugin, XpmImagePlugin and _util
+- More tests for CurImagePlugin, DcxImagePlugin, ImageFont, ImageMath, ImagePalette, IptcImagePlugin, SpiderImagePlugin, SgiImagePlugin, XpmImagePlugin and _util
   [hugovk]
 
 - Fix return value of FreeTypeFont.textsize() does not include font offsets
