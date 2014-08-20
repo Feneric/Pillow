@@ -4,6 +4,12 @@ Changelog (Pillow)
 2.6.0 (unreleased)
 ------------------
 
+- Fixed wrong P-mode of small, unoptimized L-mode GIF #843
+  [uvNikita]
+
+- Fixed CVE-2014-3598, a DOS in the Jpeg2KImagePlugin
+  [Andrew Drake]
+
 - Fixed CVE-2014-3589, a DOS in the IcnsImagePlugin
   [Andrew Drake]
 
@@ -60,6 +66,12 @@ Changelog (Pillow)
 
 - Test PalmImagePlugin and method to skip known bad tests #776
   [hugovk, wiredfool]
+
+2.5.3 (2014-08-18)
+------------------
+
+- Fixed CVE-2014-3598, a DOS in the Jpeg2KImagePlugin (backport)
+  [Andrew Drake]
 
 
 2.5.2 (2014-08-13)

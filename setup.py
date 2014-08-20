@@ -90,7 +90,7 @@ except (ImportError, OSError):
 
 
 NAME = 'Pillow'
-PILLOW_VERSION = '2.5.0'
+PILLOW_VERSION = '2.5.3'
 TCL_ROOT = None
 JPEG_ROOT = None
 JPEG2K_ROOT = None
@@ -721,9 +721,7 @@ setup(
     name=NAME,
     version=PILLOW_VERSION,
     description='Python Imaging Library (Fork)',
-    long_description=(
-        _read('README.rst') + b'\n' +
-        _read('CHANGES.rst')).decode('utf-8'),
+    long_description=_read('README.rst').decode('utf-8'),
     author='Alex Clark (fork author)',
     author_email='aclark@aclark.net',
     url='http://python-pillow.github.io/',

@@ -20,7 +20,10 @@ install:
   - "pip install cffi"
   - "pip install coveralls nose coveralls-merge"
   - "gem install coveralls-lcov"
-  - travis_retry pip install pyroma
+
+    # Pyroma installation is slow on Py3, so just do it for Py2.
+  - if [ ${TRAVIS_PYTHON_VERSION:0:1} == "2" ]; then travis_retry pip install pyroma; fi
+
   - if [ "$TRAVIS_PYTHON_VERSION" == "2.6" ]; then pip install unittest2; fi
 
   # webp
@@ -34,7 +37,7 @@ script:
   - python setup.py clean
   - CFLAGS="-coverage" python setup.py build_ext --inplace
 
-  - time coverage run --append --include=PIL/* selftest.py
+  - coverage run --append --include=PIL/* selftest.py
   - coverage run --append --include=PIL/* -m nose -vx Tests/test_*.py
 
 after_success:
