@@ -4,6 +4,30 @@ Changelog (Pillow)
 2.6.0 (unreleased)
 ------------------
 
+- Use redistributable image for testing #884
+  [hugovk]
+
+- Use redistributable ICC profiles for testing, skip if not available #923
+  [wiredfool]
+  
+- Additional documentation for JPEG info and save options #890
+  [wiredfool]
+
+- Fix JPEG Encoding memory leak when exif or qtables were specified
+  [wiredfool]
+  
+- Image.tobytes() and Image.tostring() documentation update #916 #917
+  [mgedmin]
+
+- On Windows, do not execute convert.exe without specifying path #912
+  [cgohlke]
+
+- Fix msvc build error #911
+  [cgohlke]
+
+- Fix for handling P + transparency -> RGBA conversions #904
+  [wiredfool]
+
 - Retain alpha in ImageEnhance operations #909
   [wiredfool]
 
