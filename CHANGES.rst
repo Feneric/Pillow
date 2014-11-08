@@ -3,12 +3,20 @@ Changelog (Pillow)
 
 2.7.0 (unreleased)
 ------------------
+- Speed up rotation by using cache aware loops, added transpose to rotations. #994
+  [homm]
+
+- Fix Bicubic interpolation #970
+  [homm]
+
+- Support for 4-bit greyscale TIFF images #980
+  [hugovk]
 
 - Updated manifest #957
   [wiredfool]
 
 - Fix PyPy 2.4 regression #952
- [wiredfool]
+  [wiredfool]
 
 - Webp Metadata Skip Test comments #954
   [wiredfool]
