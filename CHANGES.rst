@@ -4,13 +4,37 @@ Changelog (Pillow)
 2.7.0 (unreleased)
 ------------------
 
+- The GIF Palette optimization algorithm is only applicable to mode='P' or 'L' #993
+  [moriyoshi]
+
+- Use PySide as an alernative to PyQt4/5.
+  [holg]
+
+- Replace affine-based im.resize implementation with convolution-based im.stretch #997
+  [homm]
+
+- Replace Gaussian Blur implementation with iterated fast box blur. #961  Note: Radius parameter is interpreted differently than before.
+  [homm]
+
+- Better docs explaining import _imaging failure #1016, build #1017, mode #1018, PyAccess, PixelAccess objects #1019 Image.quantize #1020 and Image.save #1021
+  [wiredfool]
+
+- Fix for saving TIFF image into an io.BytesIO buffer #1011
+  [mfergie]
+  
+- Fix antialias compilation on debug versions of Python #1010
+  [wiredfool]
+
+- Fix for Image.putdata segfault #1009
+  [wiredfool]
+
 - Ico save, additional tests #1007
   [exherb]
 
 - Use PyQt4 if it has already been imported, otherwise prefer PyQt5. #1003
   [AurelienBallier]
   
-- Speedup stretch implementation up to 2.5 times. #977
+- Speedup resample implementation up to 2.5 times. #977
   [homm]
 
 - Speed up rotation by using cache aware loops, added transpose to rotations. #994

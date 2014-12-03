@@ -26,7 +26,7 @@ _IMAGING = (
     "decode", "encode", "map", "display", "outline", "path")
 
 _LIB_IMAGING = (
-    "Access", "AlphaComposite", "Antialias", "Bands", "BitDecode", "Blend",
+    "Access", "AlphaComposite", "Resample", "Bands", "BitDecode", "Blend",
     "Chops", "Convert", "ConvertYCbCr", "Copy", "Crc32", "Crop", "Dib", "Draw",
     "Effects", "EpsEncode", "File", "Fill", "Filter", "FliDecode",
     "Geometry", "GetBBox", "GifDecode", "GifEncode", "HexDecode",
@@ -37,7 +37,7 @@ _LIB_IMAGING = (
     "RankFilter", "RawDecode", "RawEncode", "Storage", "SunRleDecode",
     "TgaRleDecode", "Unpack", "UnpackYCC", "UnsharpMask", "XbmDecode",
     "XbmEncode", "ZipDecode", "ZipEncode", "TiffDecode", "Incremental",
-    "Jpeg2KDecode", "Jpeg2KEncode")
+    "Jpeg2KDecode", "Jpeg2KEncode", "BoxBlur")
 
 
 def _add_directory(path, dir, where=None):

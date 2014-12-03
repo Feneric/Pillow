@@ -55,10 +55,11 @@ except ImportError:
     pass
 
 try:
-    # If the _imaging C module is not present, you can still use
-    # the "open" function to identify files, but you cannot load
-    # them.  Note that other modules should not refer to _imaging
-    # directly; import Image and use the Image.core variable instead.
+    # If the _imaging C module is not present, Pillow will not load.
+    # Note that other modules should not refer to _imaging directly;
+    # import Image and use the Image.core variable instead.
+    # Also note that Image.core is not a publicly documented interface,
+    # and should be considered private and subject to change. 
     from PIL import _imaging as core
     if PILLOW_VERSION != getattr(core, 'PILLOW_VERSION', None):
         raise ImportError("The _imaging extension was built for another "
@@ -91,6 +92,7 @@ except ImportError as v:
             RuntimeWarning
             )
     # Fail here anyway. Don't let people run with a mostly broken Pillow.
+    # see docs/porting-pil-to-pillow.rst
     raise
 
 try:
@@ -743,6 +745,7 @@ class Image:
         associated with the image.
 
         :returns: An image access object.
+        :rtype: :ref:`PixelAccess` or :py:class:`PIL.PyAccess` 
         """
         if self.im and self.palette and self.palette.dirty:
             # realize palette
@@ -802,7 +805,7 @@ class Image:
         use other thresholds, use the :py:meth:`~PIL.Image.Image.point`
         method.
 
-        :param mode: The requested mode.
+        :param mode: The requested mode. See: :ref:`concept-modes`.
         :param matrix: An optional conversion matrix.  If given, this
            should be 4- or 16-tuple containing floating point values.
         :param dither: Dithering method, used when converting from
@@ -876,7 +879,7 @@ class Image:
             elif self.mode == 'P' and mode == 'RGBA':
                 t = self.info['transparency']
                 delete_trns = True
-                
+
                 if isinstance(t, bytes):
                     self.im.putpalettealphas(t)
                 elif isinstance(t, int):
@@ -937,14 +940,19 @@ class Image:
         return new_im
 
     def quantize(self, colors=256, method=None, kmeans=0, palette=None):
+        """
+        Convert the image to 'P' mode with the specified number
+        of colors.
+        
+        :param colors: The desired number of colors, <= 256
+        :param method: 0 = median cut
+                       1 = maximum coverage
+                       2 = fast octree
+        :param kmeans: Integer
+        :param palette: Quantize to the :py:class:`PIL.ImagingPalette` palette.
+        :returns: A new image                        
 
-        # methods:
-        #    0 = median cut
-        #    1 = maximum coverage
-        #    2 = fast octree
-
-        # NOTE: this functionality will be moved to the extended
-        # quantizer interface in a later version of PIL.
+        """
 
         self.load()
 
@@ -1515,9 +1523,8 @@ class Image:
            (width, height).
         :param resample: An optional resampling filter.  This can be
            one of :py:attr:`PIL.Image.NEAREST` (use nearest neighbour),
-           :py:attr:`PIL.Image.BILINEAR` (linear interpolation in a 2x2
-           environment), :py:attr:`PIL.Image.BICUBIC` (cubic spline
-           interpolation in a 4x4 environment), or
+           :py:attr:`PIL.Image.BILINEAR` (linear interpolation),
+           :py:attr:`PIL.Image.BICUBIC` (cubic spline interpolation), or
            :py:attr:`PIL.Image.ANTIALIAS` (a high-quality downsampling filter).
            If omitted, or if the image has mode "1" or "P", it is
            set :py:attr:`PIL.Image.NEAREST`.
@@ -1539,16 +1546,7 @@ class Image:
         if self.mode == 'RGBA':
             return self.convert('RGBa').resize(size, resample).convert('RGBA')
 
-        if resample == ANTIALIAS:
-            # requires stretch support (imToolkit & PIL 1.1.3)
-            try:
-                im = self.im.stretch(size, resample)
-            except AttributeError:
-                raise ValueError("unsupported resampling filter")
-        else:
-            im = self.im.resize(size, resample)
-
-        return self._new(im)
+        return self._new(self.im.resize(size, resample))
 
     def rotate(self, angle, resample=NEAREST, expand=0):
         """
@@ -1619,15 +1617,16 @@ class Image:
 
         Keyword options can be used to provide additional instructions
         to the writer. If a writer doesn't recognise an option, it is
-        silently ignored. The available options are described later in
-        this handbook.
+        silently ignored. The available options are described in the
+        :doc:`image format documentation
+        <../handbook/image-file-formats>` for each writer.
 
         You can use a file object instead of a filename. In this case,
         you must always specify the format. The file object must
-        implement the **seek**, **tell**, and **write**
+        implement the ``seek``, ``tell``, and ``write``
         methods, and be opened in binary mode.
 
-        :param file: File name or file object.
+        :param fp: File name or file object.
         :param format: Optional format override.  If omitted, the
            format to use is determined from the filename extension.
            If a file object was used instead of a filename, this
@@ -1763,12 +1762,7 @@ class Image:
         :py:meth:`~PIL.Image.Image.draft` method to configure the file reader
         (where applicable), and finally resizes the image.
 
-        Note that the bilinear and bicubic filters in the current
-        version of PIL are not well-suited for thumbnail generation.
-        You should use :py:attr:`PIL.Image.ANTIALIAS` unless speed is much more
-        important than quality.
-
-        Also note that this function modifies the :py:class:`~PIL.Image.Image`
+        Note that this function modifies the :py:class:`~PIL.Image.Image`
         object in place.  If you need to use the full resolution image as well,
         apply this method to a :py:meth:`~PIL.Image.Image.copy` of the original
         image.
@@ -1776,10 +1770,9 @@ class Image:
         :param size: Requested size.
         :param resample: Optional resampling filter.  This can be one
            of :py:attr:`PIL.Image.NEAREST`, :py:attr:`PIL.Image.BILINEAR`,
-           :py:attr:`PIL.Image.BICUBIC`, or :py:attr:`PIL.Image.ANTIALIAS`
-           (best quality).  If omitted, it defaults to
-           :py:attr:`PIL.Image.ANTIALIAS`. (was :py:attr:`PIL.Image.NEAREST`
-           prior to version 2.5.0)
+           :py:attr:`PIL.Image.BICUBIC`, or :py:attr:`PIL.Image.ANTIALIAS`.
+           If omitted, it defaults to :py:attr:`PIL.Image.ANTIALIAS`.
+           (was :py:attr:`PIL.Image.NEAREST` prior to version 2.5.0)
         :returns: None
         """
 
@@ -1798,14 +1791,7 @@ class Image:
 
         self.draft(None, size)
 
-        self.load()
-
-        try:
-            im = self.resize(size, resample)
-        except ValueError:
-            if resample != ANTIALIAS:
-                raise
-            im = self.resize(size, NEAREST)  # fallback
+        im = self.resize(size, resample)
 
         self.im = im.im
         self.mode = im.mode
@@ -2005,7 +1991,8 @@ def new(mode, size, color=0):
     """
     Creates a new image with the given mode and size.
 
-    :param mode: The mode to use for the new image.
+    :param mode: The mode to use for the new image. See:
+       :ref:`concept-modes`.
     :param size: A 2-tuple, containing (width, height) in pixels.
     :param color: What color to use for the image.  Default is black.
        If given, this should be a single integer or floating point value
@@ -2045,7 +2032,7 @@ def frombytes(mode, size, data, decoder_name="raw", *args):
     :py:class:`~io.BytesIO` object, and use :py:func:`~PIL.Image.open` to load
     it.
 
-    :param mode: The image mode.
+    :param mode: The image mode. See: :ref:`concept-modes`.
     :param size: The image size.
     :param data: A byte buffer containing raw data for the given mode.
     :param decoder_name: What decoder to use.
@@ -2097,7 +2084,7 @@ def frombuffer(mode, size, data, decoder_name="raw", *args):
     issues a warning if you do this; to disable the warning, you should provide
     the full set of parameters.  See below for details.
 
-    :param mode: The image mode.
+    :param mode: The image mode. See: :ref:`concept-modes`.
     :param size: The image size.
     :param data: A bytes or other buffer object containing raw
         data for the given mode.
@@ -2148,7 +2135,8 @@ def fromarray(obj, mode=None):
 
     :param obj: Object with array interface
     :param mode: Mode to use (will be determined from type if None)
-    :returns: An image memory.
+      See: :ref:`concept-modes`.
+    :returns: An image object.
 
     .. versionadded:: 1.1.6
     """
@@ -2365,7 +2353,8 @@ def merge(mode, bands):
     """
     Merge a set of single band images into a new multiband image.
 
-    :param mode: The mode to use for the output image.
+    :param mode: The mode to use for the output image. See:
+        :ref:`concept-modes`.
     :param bands: A sequence containing one single-band image for
         each band in the output image.  All bands must have the
         same size.

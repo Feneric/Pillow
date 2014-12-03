@@ -164,7 +164,7 @@ Instances of the :py:class:`Image` class have the following attributes:
 
     Image mode. This is a string specifying the pixel format used by the image.
     Typical values are “1”, “L”, “RGB”, or “CMYK.” See
-    :doc:`../handbook/concepts` for a full list.
+    :ref:`concept-modes` for a full list.
 
     :type: :py:class:`string`
 
@@ -192,5 +192,7 @@ Instances of the :py:class:`Image` class have the following attributes:
     keys are not standardized, it’s not possible for a method to know if the
     operation affects the dictionary. If you need the information later on,
     keep a reference to the info dictionary returned from the open method.
+
+    Unless noted elsewhere, this dictionary does not affect saving files. 
 
     :type: :py:class:`dict`
