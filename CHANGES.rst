@@ -1,9 +1,48 @@
 Changelog (Pillow)
 ==================
 
-2.7.0 (unreleased)
+2.8.0 (unreleased)
 ------------------
 
+- Fast path for opaque pixels in RGBa unpacker #1088
+  [bgilbert]
+  
+- Enable basic support for 'RGBa' raw encoding/decoding #1096
+  [immerrr]
+
+- Fix pickling L mode images with no palette, #1095
+  [hugovk]
+  
+- iPython display hook #1091
+  [wiredfool]
+
+- Adjust buffer size when quality=keep, fixes #148 (again)
+  [wiredfool]
+
+- Fix for corrupted bitmaps embedded in truetype fonts. #1072 
+  [jackyyf, wiredfool]
+
+2.7.0 (2015-01-01)
+------------------
+
+- Split Sane into a separate repo: https://github.com/python-pillow/Sane
+  [hugovk]
+
+- Look for OSX and Linux fonts in common places. #1054
+  [charleslaw]
+
+- Fix CVE-2014-9601, potential PNG decompression DOS #1060
+  [wiredfool]
+
+- Use underscores, not spaces, in TIFF tag kwargs. #1044, #1058
+  [anntzer, hugovk]
+  
+- Update PSDraw for Python3, add tests. #1055
+  [hugovk]
+
+- Use Bicubic filtering by default for thumbnails. Don't use Jpeg Draft mode for thumbnails. #1029
+  [homm]
+  
 - Fix MSVC compiler error: Use Py_ssize_t instead of ssize_t #1051
   [cgohlke]
 
@@ -13,7 +52,7 @@ Changelog (Pillow)
 - The GIF Palette optimization algorithm is only applicable to mode='P' or 'L' #993
   [moriyoshi]
 
-- Use PySide as an alernative to PyQt4/5.
+- Use PySide as an alternative to PyQt4/5.
   [holg]
 
 - Replace affine-based im.resize implementation with convolution-based im.stretch #997
@@ -63,6 +102,15 @@ Changelog (Pillow)
   
 - Fixes for things rpmlint complains about #942
   [manisandro]
+
+2.6.2 (2015-01-01)
+------------------
+
+- Fix CVE-2014-9601, potential PNG decompression DOS #1060 
+  [wiredfool]
+
+- Fix Regression in PyPy 2.4 in streamio  #958
+  [wiredfool]
 
 2.6.1 (2014-10-11)
 ------------------

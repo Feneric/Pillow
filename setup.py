@@ -90,7 +90,7 @@ except (ImportError, OSError):
 
 
 NAME = 'Pillow'
-PILLOW_VERSION = '2.6.0'
+PILLOW_VERSION = '2.7.0'
 TCL_ROOT = None
 JPEG_ROOT = None
 JPEG2K_ROOT = None
@@ -722,6 +722,9 @@ class pil_build_ext(build_ext):
             os.unlink(tmpfile)
 
 
+def debug_build():
+    return hasattr(sys, 'gettotalrefcount')
+
 setup(
     name=NAME,
     version=PILLOW_VERSION,
@@ -754,6 +757,6 @@ setup(
     test_suite='PIL.tests',
     keywords=["Imaging", ],
     license='Standard PIL License',
-    zip_safe=True,
+    zip_safe= not debug_build(),
 )
 # End of file

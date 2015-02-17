@@ -153,7 +153,7 @@ class TestFilePng(PillowTestCase):
 
         im = load(HEAD + chunk(b'iTXt', b'spam\0\1\0en\0Spam\0' +
                                zlib.compress(b"egg")[:1]) + TAIL)
-        self.assertEqual(im.info, {})
+        self.assertEqual(im.info, {'spam':''})
 
         im = load(HEAD + chunk(b'iTXt', b'spam\0\1\1en\0Spam\0' +
                                zlib.compress(b"egg")) + TAIL)
@@ -373,6 +373,14 @@ class TestFilePng(PillowTestCase):
         im.info['icc_profile'] = expected_icc
         im = roundtrip(im)
         self.assertEqual(im.info['icc_profile'], expected_icc)
+
+    def test_repr_png(self):
+        im = hopper()
+
+        repr_png = Image.open(BytesIO(im._repr_png_()))
+        self.assertEqual(repr_png.format, 'PNG')
+        self.assert_image_equal(im, repr_png)
+        
 
 
 if __name__ == '__main__':
