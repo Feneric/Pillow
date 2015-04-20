@@ -90,7 +90,7 @@ except (ImportError, OSError):
 
 
 NAME = 'Pillow'
-PILLOW_VERSION = '2.7.0'
+PILLOW_VERSION = '2.9.0.dev0'
 TCL_ROOT = None
 JPEG_ROOT = None
 JPEG2K_ROOT = None
@@ -730,7 +730,7 @@ setup(
     version=PILLOW_VERSION,
     description='Python Imaging Library (Fork)',
     long_description=_read('README.rst').decode('utf-8'),
-    author='Alex Clark (fork author)',
+    author='Alex Clark (Fork Author)',
     author_email='aclark@aclark.net',
     url='http://python-pillow.github.io/',
     classifiers=[
@@ -754,7 +754,7 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     scripts=glob.glob("Scripts/pil*.py"),
-    test_suite='PIL.tests',
+    test_suite='nose.collector',
     keywords=["Imaging", ],
     license='Standard PIL License',
     zip_safe= not debug_build(),

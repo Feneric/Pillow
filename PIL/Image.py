@@ -109,6 +109,8 @@ from PIL._util import deferred_error
 
 import os
 import sys
+import io
+import struct
 
 # type stuff
 import collections
@@ -600,7 +602,7 @@ class Image:
 
     def _repr_png_(self):
         """ iPython display hook support
-        
+
         :returns: png version of the image as bytes
         """
         from io import BytesIO
@@ -892,11 +894,10 @@ class Image:
                 if isinstance(t, bytes):
                     self.im.putpalettealphas(t)
                 elif isinstance(t, int):
-                    self.im.putpalettealpha(t,0)
+                    self.im.putpalettealpha(t, 0)
                 else:
                     raise ValueError("Transparency for P mode should" +
                                      " be bytes or int")
-
 
         if mode == "P" and palette == ADAPTIVE:
             im = self.im.quantize(colors)
@@ -1545,7 +1546,7 @@ class Image:
 
         self.load()
 
-        size=tuple(size)
+        size = tuple(size)
         if self.size == size:
             return self._new(self.im)
 
@@ -2248,6 +2249,11 @@ def open(fp, mode="r"):
     else:
         filename = ""
 
+    try:
+        fp.seek(0)
+    except (AttributeError, io.UnsupportedOperation):
+        fp = io.BytesIO(fp.read())
+
     prefix = fp.read(16)
 
     preinit()
@@ -2260,7 +2266,7 @@ def open(fp, mode="r"):
                 im = factory(fp, filename)
                 _decompression_bomb_check(im.size)
                 return im
-        except (SyntaxError, IndexError, TypeError):
+        except (SyntaxError, IndexError, TypeError, struct.error):
             # import traceback
             # traceback.print_exc()
             pass
@@ -2275,7 +2281,7 @@ def open(fp, mode="r"):
                     im = factory(fp, filename)
                     _decompression_bomb_check(im.size)
                     return im
-            except (SyntaxError, IndexError, TypeError):
+            except (SyntaxError, IndexError, TypeError, struct.error):
                 # import traceback
                 # traceback.print_exc()
                 pass
