@@ -94,7 +94,8 @@ try:
         def _render(self, font):
             txt = "Hello World!"
             ttf = ImageFont.truetype(font, FONT_SIZE)
-            w, h = ttf.getsize(txt)
+            ttf.getsize(txt)
+            
             img = Image.new("RGB", (256, 64), "white")
             d = ImageDraw.Draw(img)
             d.text((10, 10), txt, font=ttf, fill='black')
@@ -126,7 +127,7 @@ try:
 
             target = 'Tests/images/rectangle_surrounding_text.png'
             target_img = Image.open(target)
-            self.assert_image_equal(im, target_img)
+            self.assert_image_similar(im, target_img, .5)
 
         def test_render_multiline(self):
             im = Image.new(mode='RGB', size=(300, 100))

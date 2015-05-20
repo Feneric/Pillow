@@ -4,6 +4,21 @@ Changelog (Pillow)
 2.9.0 (Unreleased)
 ------------------
 
+- Update WebP from 0.4.1 to 0.4.3 #1235
+  [radarhere]
+
+- Release GIL during image load (decode) #1224
+  [lkesteloot]
+
+- Added icns save #1185
+  [radarhere]
+
+- Fix putdata memory leak #1196
+  [benoit-pierre]
+
+- Keep user-specified ordering of icon sizes #1193
+  [karimbahgat]
+
 - Tiff: allow writing floating point tag values #1113
   [bpedersen2]
 
