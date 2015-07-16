@@ -21,7 +21,7 @@ import warnings
 from PIL import ImageColor
 
 
-class ImagePalette:
+class ImagePalette(object):
     "Color palette for palette mapped images"
 
     def __init__(self, mode="RGB", palette=None, size=0):
@@ -33,6 +33,18 @@ class ImagePalette:
         if ((size == 0 and len(self.mode)*256 != len(self.palette)) or
                 (size != 0 and size != len(self.palette))):
             raise ValueError("wrong palette size")
+
+    def copy(self):
+        new = ImagePalette()
+
+        new.mode = self.mode
+        new.rawmode = self.rawmode
+        if self.palette is not None:
+            new.palette = self.palette[:]
+        new.colors = self.colors.copy()
+        new.dirty = self.dirty
+
+        return new
 
     def getdata(self):
         """

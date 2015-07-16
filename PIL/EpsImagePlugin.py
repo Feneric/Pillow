@@ -157,7 +157,7 @@ def Ghostscript(tile, size, fp, scale=1):
     return im
 
 
-class PSFile:
+class PSFile(object):
     """
     Wrapper for bytesio object that treats either CR or LF as end of line.
     """
@@ -187,7 +187,7 @@ class PSFile:
 
 
 def _accept(prefix):
-    return prefix[:4] == b"%!PS" or i32(prefix) == 0xC6D3D0C5
+    return prefix[:4] == b"%!PS" or (len(prefix) >= 4 and i32(prefix) == 0xC6D3D0C5)
 
 ##
 # Image plugin for Encapsulated Postscript.  This plugin supports only
@@ -365,7 +365,7 @@ def _save(im, fp, filename, eps=1):
     else:
         raise ValueError("image mode is not supported")
 
-    class NoCloseStream:
+    class NoCloseStream(object):
         def __init__(self, fp):
             self.fp = fp
 

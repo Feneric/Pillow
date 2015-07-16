@@ -81,6 +81,12 @@ class TestFilePng(PillowTestCase):
         hopper("I").save(test_file)
         im = Image.open(test_file)
 
+    def test_invalid_file(self):
+        invalid_file = "Tests/images/flower.jpg"
+
+        self.assertRaises(SyntaxError,
+                          lambda: PngImagePlugin.PngImageFile(invalid_file))
+
     def test_broken(self):
         # Check reading of totally broken files.  In this case, the test
         # file was checked into Subversion as a text file.
@@ -353,6 +359,13 @@ class TestFilePng(PillowTestCase):
 
         self.assert_image_equal(im2.convert('RGBA'),
                                 im.convert('RGBA'))
+
+    def test_trns_null(self):
+        # Check reading images with null tRNS value, issue #1239
+        test_file = "Tests/images/tRNS_null_1x1.png"
+        im = Image.open(test_file)
+
+        self.assertEqual(im.info["transparency"], 0)
 
     def test_save_icc_profile_none(self):
         # check saving files with an ICC profile set to None (omit profile)

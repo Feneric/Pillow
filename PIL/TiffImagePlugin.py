@@ -42,6 +42,7 @@
 from __future__ import print_function
 
 __version__ = "1.3.5"
+DEBUG = False # Needs to be merged with the new logging approach.
 
 from PIL import Image, ImageFile
 from PIL import ImagePalette
@@ -294,7 +295,7 @@ class ImageFileDirectory(collections.MutableMapping):
 
     def named(self):
         """
-        Returns the complete tag dictionary, with named tags where posible.
+        Returns the complete tag dictionary, with named tags where possible.
         """
         from PIL import TiffTags
         result = {}
@@ -426,10 +427,15 @@ class ImageFileDirectory(collections.MutableMapping):
         for i in range(i16(fp.read(2))):
 
             ifd = fp.read(12)
+            if len(ifd) != 12:
+                warnings.warn("Possibly corrupt EXIF data.  "
+                              "Expecting to read 12 bytes but only got %d."
+                              % (len(ifd)))
+                continue
 
             tag, typ = i16(ifd), i16(ifd, 2)
 
-            if Image.DEBUG:
+            if DEBUG:
                 from PIL import TiffTags
                 tagname = TiffTags.TAGS.get(tag, "unknown")
                 typname = TiffTags.TYPES.get(typ, "unknown")
@@ -439,7 +445,7 @@ class ImageFileDirectory(collections.MutableMapping):
             try:
                 dispatch = self.load_dispatch[typ]
             except KeyError:
-                if Image.DEBUG:
+                if DEBUG:
                     print("- unsupported type", typ)
                 continue  # ignore unsupported type
 
@@ -450,10 +456,10 @@ class ImageFileDirectory(collections.MutableMapping):
             # Get and expand tag value
             if size > 4:
                 here = fp.tell()
-                if Image.DEBUG:
+                if DEBUG:
                     print("Tag Location: %s" % here)
                 fp.seek(i32(ifd, 8))
-                if Image.DEBUG:
+                if DEBUG:
                     print("Data Location: %s" % fp.tell())
                 data = ImageFile._safe_read(fp, size)
                 fp.seek(here)
@@ -469,14 +475,21 @@ class ImageFileDirectory(collections.MutableMapping):
             self.tagdata[tag] = data
             self.tagtype[tag] = typ
 
-            if Image.DEBUG:
+            if DEBUG:
                 if tag in (COLORMAP, IPTC_NAA_CHUNK, PHOTOSHOP_CHUNK,
                            ICCPROFILE, XMP):
                     print("- value: <table: %d bytes>" % size)
                 else:
                     print("- value:", self[tag])
 
-        self.next = i32(fp.read(4))
+        ifd = fp.read(4)
+        if len(ifd) != 4:
+            warnings.warn("Possibly corrupt EXIF data.  "
+                          "Expecting to read 4 bytes but only got %d."
+                          % (len(ifd)))
+            return
+
+        self.next = i32(ifd)
 
     # save primitives
 
@@ -505,8 +518,8 @@ class ImageFileDirectory(collections.MutableMapping):
             if tag in self.tagtype:
                 typ = self.tagtype[tag]
 
-            if Image.DEBUG:
-                print("Tag %s, Type: %s, Value: %s" % (tag, typ, value))
+            if DEBUG:
+                print ("Tag %s, Type: %s, Value: %s" % (tag, typ, value))
 
             if typ == 1:
                 # byte data
@@ -536,7 +549,7 @@ class ImageFileDirectory(collections.MutableMapping):
                 # and doesn't match the tiff spec: 8-bit byte that
                 # contains a 7-bit ASCII code; the last byte must be
                 # NUL (binary zero). Also, I don't think this was well
-                # excersized before.
+                # exercised before.
                 data = value = b"" + value.encode('ascii', 'replace') + b"\0"
             else:
                 # integer data
@@ -559,7 +572,7 @@ class ImageFileDirectory(collections.MutableMapping):
                 else:
                     data = b"".join(map(o32, value))
 
-            if Image.DEBUG:
+            if DEBUG:
                 from PIL import TiffTags
                 tagname = TiffTags.TAGS.get(tag, "unknown")
                 typname = TiffTags.TYPES.get(typ, "unknown")
@@ -596,7 +609,7 @@ class ImageFileDirectory(collections.MutableMapping):
 
         # pass 2: write directory to file
         for tag, typ, count, value, data in directory:
-            if Image.DEBUG > 1:
+            if DEBUG > 1:
                 print(tag, typ, count, repr(value), repr(data))
             fp.write(o16(tag) + o16(typ) + o32(count) + value)
 
@@ -636,54 +649,78 @@ class TiffImageFile(ImageFile.ImageFile):
         self.__first = self.__next = self.ifd.i32(ifh, 4)
         self.__frame = -1
         self.__fp = self.fp
+        self._frame_pos = []
+        self._n_frames = None
+        self._is_animated = None
 
-        if Image.DEBUG:
-            print("*** TiffImageFile._open ***")
-            print("- __first:", self.__first)
-            print("- ifh: ", ifh)
+        if DEBUG:
+            print ("*** TiffImageFile._open ***")
+            print ("- __first:", self.__first)
+            print ("- ifh: ", ifh)
 
         # and load the first frame
         self._seek(0)
 
+    @property
+    def n_frames(self):
+        if self._n_frames is None:
+            current = self.tell()
+            try:
+                while True:
+                    self._seek(self.tell() + 1)
+            except EOFError:
+                self._n_frames = self.tell() + 1
+            self.seek(current)
+        return self._n_frames
+
+    @property
+    def is_animated(self):
+        if self._is_animated is None:
+            current = self.tell()
+
+            try:
+                self.seek(1)
+                self._is_animated = True
+            except EOFError:
+                self._is_animated = False
+
+            self.seek(current)
+        return self._is_animated
+
     def seek(self, frame):
         "Select a given frame as current image"
-        if frame < 0:
-            frame = 0
-        self._seek(frame)
+        self._seek(max(frame, 0))  # Questionable backwards compatibility.
         # Create a new core image object on second and
         # subsequent frames in the image. Image may be
         # different size/mode.
         Image._decompression_bomb_check(self.size)
         self.im = Image.core.new(self.mode, self.size)
 
-    def tell(self):
-        "Return the current frame number"
-        return self._tell()
-
     def _seek(self, frame):
         self.fp = self.__fp
-        if frame < self.__frame:
-            # rewind file
-            self.__frame = -1
-            self.__next = self.__first
-        while self.__frame < frame:
+        while len(self._frame_pos) <= frame:
             if not self.__next:
                 raise EOFError("no more images in TIFF file")
-            if Image.DEBUG:
+            if DEBUG:
                 print("Seeking to frame %s, on frame %s, __next %s, location: %s" %
                       (frame, self.__frame, self.__next, self.fp.tell()))
             # reset python3 buffered io handle in case fp
             # was passed to libtiff, invalidating the buffer
             self.fp.tell()
             self.fp.seek(self.__next)
-            if Image.DEBUG:
+            self._frame_pos.append(self.__next)
+            if DEBUG:
                 print("Loading tags, location: %s" % self.fp.tell())
             self.tag.load(self.fp)
             self.__next = self.tag.next
             self.__frame += 1
+        self.fp.seek(self._frame_pos[frame])
+        self.tag.load(self.fp)
+        self.__frame = frame
         self._setup()
 
-    def _tell(self):
+    def tell(self):
+        "Return the current frame number"
         return self.__frame
 
     def _decoder(self, rawmode, layer, tile=None):
@@ -749,21 +786,21 @@ class TiffImageFile(ImageFile.ImageFile):
             #
             # Rearranging for supporting byteio items, since they have a fileno
             # that returns an IOError if there's no underlying fp. Easier to
-            # dea. with here by reordering.
-            if Image.DEBUG:
-                print("have getvalue. just sending in a string from getvalue")
+            # deal with here by reordering.
+            if DEBUG:
+                print ("have getvalue. just sending in a string from getvalue")
             n, err = decoder.decode(self.fp.getvalue())
         elif hasattr(self.fp, "fileno"):
             # we've got a actual file on disk, pass in the fp.
-            if Image.DEBUG:
-                print("have fileno, calling fileno version of the decoder.")
+            if DEBUG:
+                print ("have fileno, calling fileno version of the decoder.")
             self.fp.seek(0)
             # 4 bytes, otherwise the trace might error out
             n, err = decoder.decode(b"fpfp")
         else:
             # we have something else.
-            if Image.DEBUG:
-                print("don't have fileno or getvalue. just reading")
+            if DEBUG:
+                print ("don't have fileno or getvalue. just reading")
             # UNDONE -- so much for that buffer size thing.
             n, err = decoder.decode(self.fp.read())
 
@@ -800,7 +837,7 @@ class TiffImageFile(ImageFile.ImageFile):
 
         fillorder = getscalar(FILLORDER, 1)
 
-        if Image.DEBUG:
+        if DEBUG:
             print("*** Summary ***")
             print("- compression:", self._compression)
             print("- photometric_interpretation:", photo)
@@ -812,7 +849,7 @@ class TiffImageFile(ImageFile.ImageFile):
         ysize = getscalar(IMAGELENGTH)
         self.size = xsize, ysize
 
-        if Image.DEBUG:
+        if DEBUG:
             print("- size:", self.size)
 
         format = getscalar(SAMPLEFORMAT, 1)
@@ -823,16 +860,16 @@ class TiffImageFile(ImageFile.ImageFile):
             self.tag.get(BITSPERSAMPLE, (1,)),
             self.tag.get(EXTRASAMPLES, ())
             )
-        if Image.DEBUG:
+        if DEBUG:
             print("format key:", key)
         try:
             self.mode, rawmode = OPEN_INFO[key]
         except KeyError:
-            if Image.DEBUG:
+            if DEBUG:
                 print("- unsupported format")
             raise SyntaxError("unknown pixel mode")
 
-        if Image.DEBUG:
+        if DEBUG:
             print("- raw mode:", rawmode)
             print("- pil mode:", self.mode)
 
@@ -872,7 +909,7 @@ class TiffImageFile(ImageFile.ImageFile):
                                                      "tiff_sgilog",
                                                      "tiff_sgilog24",
                                                      "tiff_raw_16"]:
-                # if Image.DEBUG:
+                # if DEBUG:
                 #     print "Activating g4 compression for whole file"
 
                 # Decoder expects entire file as one tile.
@@ -913,7 +950,7 @@ class TiffImageFile(ImageFile.ImageFile):
                         self.tag.get(BITSPERSAMPLE, (1,)),
                         self.tag.get(EXTRASAMPLES, ())
                         )
-                    if Image.DEBUG:
+                    if DEBUG:
                         print("format key:", key)
                     # this should always work, since all the
                     # fillorder==2 modes have a corresponding
@@ -942,8 +979,8 @@ class TiffImageFile(ImageFile.ImageFile):
                         (self._compression,
                             (0, min(y, ysize), w, min(y+h, ysize)),
                             offsets[i], a))
-                    if Image.DEBUG:
-                        print("tiles: ", self.tile)
+                    if DEBUG:
+                        print ("tiles: ", self.tile)
                     y = y + h
                     if y >= self.size[1]:
                         x = y = 0
@@ -971,7 +1008,7 @@ class TiffImageFile(ImageFile.ImageFile):
                         l += 1
                         a = None
         else:
-            if Image.DEBUG:
+            if DEBUG:
                 print("- unsupported data organization")
             raise SyntaxError("unknown data organization")
 
@@ -985,7 +1022,7 @@ class TiffImageFile(ImageFile.ImageFile):
 # Write TIFF files
 
 # little endian is default except for image modes with
-# explict big endian byte-order
+# explicit big endian byte-order
 
 SAVE_INFO = {
     # mode => rawmode, byteorder, photometrics,
@@ -1052,7 +1089,7 @@ def _save(im, fp, filename):
 
     # write any arbitrary tags passed in as an ImageFileDirectory
     info = im.encoderinfo.get("tiffinfo", {})
-    if Image.DEBUG:
+    if DEBUG:
         print("Tiffinfo Keys: %s" % info.keys)
     keys = list(info.keys())
     for key in keys:
@@ -1127,9 +1164,9 @@ def _save(im, fp, filename):
     ifd[COMPRESSION] = COMPRESSION_INFO_REV.get(compression, 1)
 
     if libtiff:
-        if Image.DEBUG:
-            print("Saving using libtiff encoder")
-            print(ifd.items())
+        if DEBUG:
+            print ("Saving using libtiff encoder")
+            print (ifd.items())
         _fp = 0
         if hasattr(fp, "fileno"):
             try:
@@ -1185,8 +1222,8 @@ def _save(im, fp, filename):
                     # int or similar
                     atts[k] = v
 
-        if Image.DEBUG:
-            print(atts)
+        if DEBUG:
+            print (atts)
 
         # libtiff always expects the bytes in native order.
         # we're storing image byte order. So, if the rawmode

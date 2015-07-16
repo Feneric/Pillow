@@ -1,8 +1,95 @@
 Changelog (Pillow)
 ==================
 
-2.9.0 (Unreleased)
+3.0.0 (Unreleased)
 ------------------
+
+- Added various tests #1330, #1344
+  [radarhere]
+  
+- More ImageFont tests #1327
+  [hugovk]
+
+- Use logging instead of print #1207
+  [anntzer]
+
+2.9.0 (2015-07-01)
+------------------
+
+- Added test for GimpPaletteFile #1324
+  [radarhere]
+
+- Fixed ValueError in Python 2.6 #1315 #1316
+  [cgohlke, radarhere]
+
+- Fixed tox test script path #1308
+  [radarhere]
+
+- Added width and height properties #1304
+  [radarhere]
+ 
+- Update tiff and tk tcl 8.5 versions #1303
+  [radarhere, wiredfool]
+ 
+- Add functions to convert: Image <-> QImage; Image <-> QPixmap #1217
+  [radarhere, rominf]
+
+- Remove duplicate code in gifmaker script #1294
+  [radarhere]
+
+- Multiline text in ImageDraw #1177
+  [allo-, radarhere]
+  
+- Automated Windows CI/build support #1278
+  [wiredfool]
+
+- Removed support for Tk versions earlier than 8.4 #1288
+  [radarhere]
+  
+- Fixed polygon edge drawing #1255 (fixes #1252)
+  [radarhere]
+  
+- Check prefix length in _accept methods #1267
+  [radarhere]
+  
+- Register MIME type for BMP #1277
+  [coldmind]
+
+- Adjusted ImageQt use of unicode() for 2/3 compatibility #1218
+  [radarhere]
+
+- Identify XBM file created with filename including underscore #1230 (fixes #1229)
+  [hugovk]
+  
+- Copy image when saving in GifImagePlugin #1231 (fixes #718)
+  [radarhere]
+
+- Removed support for FreeType 2.0 #1247
+  [radarhere]
+
+- Added background saving to GifImagePlugin #1273
+  [radarhere]
+
+- Provide n_frames attribute to multi-frame formats #1261
+  [anntzer, radarhere]
+
+- Add duration and loop set to GifImagePlugin #1172, #1269
+  [radarhere]
+
+- Ico files are little endian #1232
+  [wiredfool]
+
+- Upgrade olefile from 0.30 to 0.42b #1226
+  [radarhere, decalage2]
+
+- Setting transparency value to 0 when the tRNS contains only null byte(s) #1239
+  [juztin]
+ 
+- Separated out feature checking from selftest #1233
+  [radarhere]
+
+- Style/health fixes
+  [radarhere]
 
 - Update WebP from 0.4.1 to 0.4.3 #1235
   [radarhere]
@@ -21,6 +108,12 @@ Changelog (Pillow)
 
 - Tiff: allow writing floating point tag values #1113
   [bpedersen2]
+
+2.8.2 (2015-06-06)
+------------------
+
+- Bug fix: Fixed Tiff handling of bad EXIF data
+  [radarhere]
 
 2.8.1 (2015-04-02)
 ------------------

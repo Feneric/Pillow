@@ -71,6 +71,14 @@ class MicImageFile(TiffImagePlugin.TiffImageFile):
 
         self.seek(0)
 
+    @property
+    def n_frames(self):
+        return len(self.images)
+
+    @property
+    def is_animated(self):
+        return len(self.images) > 1
+
     def seek(self, frame):
 
         try:

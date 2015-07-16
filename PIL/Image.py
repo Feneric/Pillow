@@ -28,14 +28,17 @@ from __future__ import print_function
 
 from PIL import VERSION, PILLOW_VERSION, _plugins
 
+import logging
 import warnings
+
+logger = logging.getLogger(__name__)
 
 
 class DecompressionBombWarning(RuntimeWarning):
     pass
 
 
-class _imaging_not_installed:
+class _imaging_not_installed(object):
     # module placeholder
     def __getattr__(self, id):
         raise ImportError("The _imaging C module is not installed")
@@ -121,7 +124,7 @@ USE_CFFI_ACCESS = hasattr(sys, 'pypy_version_info')
 try:
     import cffi
     HAS_CFFI = True
-except:
+except ImportError:
     HAS_CFFI = False
 
 
@@ -137,11 +140,6 @@ def isImageType(t):
     :returns: True if the object is an image
     """
     return hasattr(t, "im")
-
-#
-# Debug level
-
-DEBUG = 0
 
 #
 # Constants (also defined in _imagingmodule.c!)
@@ -204,6 +202,7 @@ ID = []
 OPEN = {}
 MIME = {}
 SAVE = {}
+SAVE_ALL = {}
 EXTENSION = {}
 
 # --------------------------------------------------------------------
@@ -386,13 +385,10 @@ def init():
 
     for plugin in _plugins:
         try:
-            if DEBUG:
-                print("Importing %s" % plugin)
+            logger.debug("Importing %s", plugin)
             __import__("PIL.%s" % plugin, globals(), locals(), [])
-        except ImportError:
-            if DEBUG:
-                print("Image: failed to import", end=' ')
-                print(plugin, ":", sys.exc_info()[1])
+        except ImportError as e:
+            logger.debug("Image: failed to import %s: %s", plugin, e)
 
     if OPEN or SAVE:
         _initialized = 2
@@ -443,7 +439,7 @@ def coerce_e(value):
     return value if isinstance(value, _E) else _E(value)
 
 
-class _E:
+class _E(object):
     def __init__(self, data):
         self.data = data
 
@@ -478,7 +474,7 @@ def _getscaleoffset(expr):
 # --------------------------------------------------------------------
 # Implementation wrapper
 
-class Image:
+class Image(object):
     """
     This class represents an image object.  To create
     :py:class:`~PIL.Image.Image` objects, use the appropriate factory
@@ -504,12 +500,21 @@ class Image:
         self.readonly = 0
         self.pyaccess = None
 
+    @property
+    def width(self):
+        return self.size[0]
+
+    @property
+    def height(self):
+        return self.size[1]
+
     def _new(self, im):
         new = Image()
         new.im = im
         new.mode = im.mode
         new.size = im.size
-        new.palette = self.palette
+        if self.palette:
+            new.palette = self.palette.copy()
         if im.mode == "P" and not new.palette:
             from PIL import ImagePalette
             new.palette = ImagePalette.ImagePalette()
@@ -545,8 +550,7 @@ class Image:
         try:
             self.fp.close()
         except Exception as msg:
-            if DEBUG:
-                print("Error closing: %s" % msg)
+            logger.debug("Error closing: %s" % msg)
 
         # Instead of simply setting to None, we're setting up a
         # deferred error that will better explain that the core image
@@ -1660,6 +1664,10 @@ class Image:
         # may mutate self!
         self.load()
 
+        save_all = False
+        if 'save_all' in params:
+            save_all = params['save_all']
+            del params['save_all']
         self.encoderinfo = params
         self.encoderconfig = ()
 
@@ -1668,20 +1676,16 @@ class Image:
         ext = os.path.splitext(filename)[1].lower()
 
         if not format:
-            try:
-                format = EXTENSION[ext]
-            except KeyError:
+            if ext not in EXTENSION:
                 init()
-                try:
-                    format = EXTENSION[ext]
-                except KeyError:
-                    raise KeyError(ext)  # unknown extension
+            format = EXTENSION[ext]
 
-        try:
-            save_handler = SAVE[format.upper()]
-        except KeyError:
+        if format.upper() not in SAVE:
             init()
-            save_handler = SAVE[format.upper()]  # unknown format
+        if save_all:
+            save_handler = SAVE_ALL[format.upper()]
+        else:
+            save_handler = SAVE[format.upper()]
 
         if isPath(fp):
             fp = builtins.open(fp, "wb")
@@ -1810,7 +1814,7 @@ class Image:
         self.readonly = 0
         self.pyaccess = None
 
-    # FIXME: the different tranform methods need further explanation
+    # FIXME: the different transform methods need further explanation
     # instead of bloating the method docs, add a separate chapter.
     def transform(self, size, method, data=None, resample=NEAREST, fill=1):
         """
@@ -1935,6 +1939,20 @@ class Image:
         im = self.im.effect_spread(distance)
         return self._new(im)
 
+    def toqimage(self):
+        """Returns a QImage copy of this image"""
+        from PIL import ImageQt
+        if not ImageQt.qt_is_installed:
+            raise ImportError("Qt bindings are not installed")
+        return ImageQt.toqimage(self)
+
+    def toqpixmap(self):
+        """Returns a QPixmap copy of this image"""
+        from PIL import ImageQt
+        if not ImageQt.qt_is_installed:
+            raise ImportError("Qt bindings are not installed")
+        return ImageQt.toqpixmap(self)
+
 
 # --------------------------------------------------------------------
 # Lazy operations
@@ -1975,12 +1993,12 @@ class _ImageCrop(Image):
 # --------------------------------------------------------------------
 # Abstract handlers.
 
-class ImagePointHandler:
+class ImagePointHandler(object):
     # used as a mixin by point transforms (for use with im.point)
     pass
 
 
-class ImageTransformHandler:
+class ImageTransformHandler(object):
     # used as a mixin by geometry transforms (for use with im.transform)
     pass
 
@@ -2184,6 +2202,22 @@ def fromarray(obj, mode=None):
 
     return frombuffer(mode, size, obj, "raw", rawmode, 0, 1)
 
+
+def fromqimage(im):
+    """Creates an image instance from a QImage image"""
+    from PIL import ImageQt
+    if not ImageQt.qt_is_installed:
+        raise ImportError("Qt bindings are not installed")
+    return ImageQt.fromqimage(im)
+
+
+def fromqpixmap(im):
+    """Creates an image instance from a QPixmap image"""
+    from PIL import ImageQt
+    if not ImageQt.qt_is_installed:
+        raise ImportError("Qt bindings are not installed")
+    return ImageQt.fromqpixmap(im)
+
 _fromarray_typemap = {
     # (shape, typestr) => mode, rawmode
     # first two members of shape are set to one
@@ -2231,7 +2265,7 @@ def open(fp, mode="r"):
     :py:meth:`~PIL.Image.Image.load` method).  See
     :py:func:`~PIL.Image.new`.
 
-    :param file: A filename (string) or a file object.  The file object
+    :param fp: A filename (string) or a file object.  The file object
        must implement :py:meth:`~file.read`, :py:meth:`~file.seek`, and
        :py:meth:`~file.tell` methods, and be opened in binary mode.
     :param mode: The mode.  If given, this argument must be "r".
@@ -2267,9 +2301,7 @@ def open(fp, mode="r"):
                 _decompression_bomb_check(im.size)
                 return im
         except (SyntaxError, IndexError, TypeError, struct.error):
-            # import traceback
-            # traceback.print_exc()
-            pass
+            logger.debug("", exc_info=True)
 
     if init():
 
@@ -2282,9 +2314,7 @@ def open(fp, mode="r"):
                     _decompression_bomb_check(im.size)
                     return im
             except (SyntaxError, IndexError, TypeError, struct.error):
-                # import traceback
-                # traceback.print_exc()
-                pass
+                logger.debug("", exc_info=True)
 
     raise IOError("cannot identify image file %r"
                   % (filename if filename else fp))
@@ -2428,6 +2458,18 @@ def register_save(id, driver):
     :param driver: A function to save images in this format.
     """
     SAVE[id.upper()] = driver
+
+
+def register_save_all(id, driver):
+    """
+    Registers an image function to save all the frames
+    of a multiframe format.  This function should not be
+    used in application code.
+
+    :param id: An image format identifier.
+    :param driver: A function to save images in this format.
+    """
+    SAVE_ALL[id.upper()] = driver
 
 
 def register_extension(id, extension):
