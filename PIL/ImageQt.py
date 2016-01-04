@@ -16,7 +16,7 @@
 # See the README file for information on usage and redistribution.
 #
 
-import PIL
+from PIL import Image
 from PIL._util import isPath
 from io import BytesIO
 
@@ -53,7 +53,12 @@ def rgb(r, g, b, a=255):
 def fromqimage(im):
     buffer = QBuffer()
     buffer.open(QIODevice.ReadWrite)
-    im.save(buffer, 'ppm')
+    # preserve alha channel with png
+    # otherwise ppm is more friendly with Image.open
+    if im.hasAlphaChannel():
+        im.save(buffer, 'png')
+    else:
+        im.save(buffer, 'ppm')
 
     b = BytesIO()
     try:
@@ -64,7 +69,7 @@ def fromqimage(im):
     buffer.close()
     b.seek(0)
 
-    return PIL.Image.open(b)
+    return Image.open(b)
 
 
 def fromqpixmap(im):
@@ -78,7 +83,36 @@ def fromqpixmap(im):
     # bytes_io.write(buffer.data())
     # buffer.close()
     # bytes_io.seek(0)
-    # return PIL.Image.open(bytes_io)
+    # return Image.open(bytes_io)
+
+
+def align8to32(bytes, width, mode):
+    """
+    converts each scanline of data from 8 bit to 32 bit aligned
+    """
+
+    bits_per_pixel = {
+        '1': 1,
+        'L': 8,
+        'P': 8,
+    }[mode]
+
+    # calculate bytes per line and the extra padding if needed
+    bits_per_line = bits_per_pixel * width
+    full_bytes_per_line, remaining_bits_per_line = divmod(bits_per_line, 8)
+    bytes_per_line = full_bytes_per_line + (1 if remaining_bits_per_line else 0)
+
+    extra_padding = -bytes_per_line % 4
+
+    # already 32 bit aligned by luck
+    if not extra_padding:
+        return bytes
+
+    new_data = []
+    for i in range(len(bytes) // bytes_per_line):
+        new_data.append(bytes[i*bytes_per_line:(i+1)*bytes_per_line] + b'\x00' * extra_padding)
+
+    return b''.join(new_data)
 
 
 def _toqclass_helper(im):
@@ -93,7 +127,7 @@ def _toqclass_helper(im):
         else:
             im = str(im.toUtf8(), "utf-8")
     if isPath(im):
-        im = PIL.Image.open(im)
+        im = Image.open(im)
 
     if im.mode == "1":
         format = QImage.Format_Mono
@@ -117,13 +151,13 @@ def _toqclass_helper(im):
         except SystemError:
             # workaround for earlier versions
             r, g, b, a = im.split()
-            im = PIL.Image.merge("RGBA", (b, g, r, a))
+            im = Image.merge("RGBA", (b, g, r, a))
         format = QImage.Format_ARGB32
     else:
         raise ValueError("unsupported image mode %r" % im.mode)
 
     # must keep a reference, or Qt will crash!
-    __data = data or im.tobytes()
+    __data = data or align8to32(im.tobytes(), im.size[0], im.mode)
     return {
         'data': __data, 'im': im, 'format': format, 'colortable': colortable
     }

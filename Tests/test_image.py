@@ -1,6 +1,7 @@
 from helper import unittest, PillowTestCase, hopper
 
 from PIL import Image
+import sys
 
 
 class TestImage(PillowTestCase):
@@ -47,6 +48,25 @@ class TestImage(PillowTestCase):
             import io
             im = io.BytesIO(b'')
         self.assertRaises(IOError, lambda: Image.open(im))
+
+    @unittest.skipIf(sys.version_info < (3, 4),
+                     "pathlib only available in Python 3.4 or later")
+    def test_pathlib(self):
+        from pathlib import Path
+        im = Image.open(Path("Tests/images/hopper.jpg"))
+        self.assertEqual(im.mode, "RGB")
+        self.assertEqual(im.size, (128, 128))
+
+    def test_tempfile(self):
+        # see #1460, pathlib support breaks tempfile.TemporaryFile on py27
+        # Will error out on save on 3.0.0
+        import tempfile
+        im = hopper()
+        fp = tempfile.TemporaryFile()
+        im.save(fp, 'JPEG')
+        fp.seek(0)
+        reloaded = Image.open(fp)
+        self.assert_image_similar(im, reloaded, 20)
 
     def test_internals(self):
 

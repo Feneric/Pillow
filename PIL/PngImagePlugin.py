@@ -33,13 +33,13 @@
 
 from __future__ import print_function
 
-__version__ = "0.9"
-
 import logging
 import re
 import zlib
 
 from PIL import Image, ImageFile, ImagePalette, _binary
+
+__version__ = "0.9"
 
 logger = logging.getLogger(__name__)
 
@@ -762,10 +762,8 @@ def _save(im, fp, filename, chunk=putchunk, check=0):
 
     chunk(fp, b"IEND", b"")
 
-    try:
+    if hasattr(fp, "flush"):
         fp.flush()
-    except:
-        pass
 
 
 # --------------------------------------------------------------------
@@ -803,9 +801,9 @@ def getchunks(im, **params):
 # --------------------------------------------------------------------
 # Registry
 
-Image.register_open("PNG", PngImageFile, _accept)
-Image.register_save("PNG", _save)
+Image.register_open(PngImageFile.format, PngImageFile, _accept)
+Image.register_save(PngImageFile.format, _save)
 
-Image.register_extension("PNG", ".png")
+Image.register_extension(PngImageFile.format, ".png")
 
-Image.register_mime("PNG", "image/png")
+Image.register_mime(PngImageFile.format, "image/png")

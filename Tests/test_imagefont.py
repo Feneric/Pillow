@@ -88,11 +88,6 @@ try:
                 self._render(f)
             self._clean()
 
-        def test_font_old_parameters(self):
-            self.assert_warning(
-                DeprecationWarning,
-                lambda: ImageFont.truetype(filename=FONT_PATH, size=FONT_SIZE))
-
         def _render(self, font):
             txt = "Hello World!"
             ttf = ImageFont.truetype(font, FONT_SIZE)
@@ -228,11 +223,11 @@ try:
                 font, orientation=orientation)
 
             # Original font
-            draw.setfont(font)
+            draw.font = font
             box_size_a = draw.textsize(word)
 
             # Rotated font
-            draw.setfont(transposed_font)
+            draw.font = transposed_font
             box_size_b = draw.textsize(word)
 
             # Check (w,h) of box a is (h,w) of box b
@@ -250,11 +245,11 @@ try:
                 font, orientation=orientation)
 
             # Original font
-            draw.setfont(font)
+            draw.font = font
             box_size_a = draw.textsize(word)
 
             # Rotated font
-            draw.setfont(transposed_font)
+            draw.font = transposed_font
             box_size_b = draw.textsize(word)
 
             # Check boxes a and b are same size
@@ -427,6 +422,24 @@ try:
                         font_directory+'/Single.otf', 'Single')
                     self._test_fake_loading_font(
                         font_directory+'/Duplicate.ttf', 'Duplicate')
+
+        def test_imagefont_getters(self):
+            # Arrange
+            t = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+
+            # Act / Assert
+            self.assertEqual(t.getmetrics(), (16, 4))
+            self.assertEqual(t.font.ascent, 16)
+            self.assertEqual(t.font.descent, 4)
+            self.assertEqual(t.font.height, 20)
+            self.assertEqual(t.font.x_ppem, 20)
+            self.assertEqual(t.font.y_ppem, 20)
+            self.assertEqual(t.font.glyphs, 4177)
+            self.assertEqual(t.getsize('A'), (12, 16))
+            self.assertEqual(t.getsize('AB'), (24, 16))
+            self.assertEqual(t.getsize('M'), (12, 16))
+            self.assertEqual(t.getsize('y'), (12, 20))
+            self.assertEqual(t.getsize('a'), (12, 16))
 
 
 except ImportError:

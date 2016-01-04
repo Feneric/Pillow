@@ -1,7 +1,14 @@
 Pillow
 ======
 
-Pillow is the "friendly PIL fork" by `Alex Clark and Contributors <https://github.com/python-pillow/Pillow/graphs/contributors>`_. PIL is the Python Imaging Library by Fredrik Lundh and Contributors.
+Pillow is the friendly PIL fork by `Alex Clark and Contributors <https://github.com/python-pillow/Pillow/graphs/contributors>`_. PIL is the Python Imaging Library by Fredrik Lundh and Contributors.
+
+.. image:: https://zenodo.org/badge/17549/python-pillow/Pillow.svg
+   :target: https://zenodo.org/badge/latestdoi/17549/python-pillow/Pillow
+
+.. image:: https://readthedocs.org/projects/pillow/badge/?version=latest
+   :target: http://pillow.readthedocs.org/?badge=latest
+   :alt: Documentation Status
 
 .. image:: https://travis-ci.org/python-pillow/Pillow.svg?branch=master
    :target: https://travis-ci.org/python-pillow/Pillow
@@ -10,6 +17,10 @@ Pillow is the "friendly PIL fork" by `Alex Clark and Contributors <https://githu
 .. image:: https://travis-ci.org/python-pillow/pillow-wheels.svg?branch=latest
    :target: https://travis-ci.org/python-pillow/pillow-wheels
    :alt: Travis CI build status (OS X)
+
+.. image:: https://img.shields.io/appveyor/ci/python-pillow/Pillow/master.svg?label=Windows%20build
+   :target: https://ci.appveyor.com/project/python-pillow/Pillow
+   :alt: AppVeyor CI build status (Windows)
 
 .. image:: https://img.shields.io/pypi/v/pillow.svg
     :target: https://pypi.python.org/pypi/Pillow/
@@ -30,13 +41,18 @@ Pillow is the "friendly PIL fork" by `Alex Clark and Contributors <https://githu
 .. toctree::
    :maxdepth: 2
 
-   installation
-   guides
+   installation.rst
+   handbook/index.rst
    reference/index.rst
-   handbook/appendices
+   porting.rst
+   about.rst
    releasenotes/index.rst
-   about
-   pre-fork-readme
+
+.. raw:: html
+
+    <a href="https://gratipay.com/pillow/">
+      <img alt="Support via Gratipay" src="https://cdn.rawgit.com/gratipay/gratipay-badge/2.3.0/dist/gratipay.png"/>
+    </a>
 
 Indices and tables
 ==================

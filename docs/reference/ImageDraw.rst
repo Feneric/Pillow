@@ -81,7 +81,7 @@ Example: Draw Partial Opacity Text
 
     from PIL import Image, ImageDraw, ImageFont
     # get an image
-    base = Image.open('Pillow/Tests/images/lena.png').convert('RGBA')  
+    base = Image.open('Pillow/Tests/images/lena.png').convert('RGBA')
 
     # make a blank image for the text, initialized to transparent text color
     txt = Image.new('RGBA', base.size, (255,255,255,0))
@@ -89,7 +89,7 @@ Example: Draw Partial Opacity Text
     # get a font
     fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 40)
     # get a drawing context
-    d = ImageDraw.Draw(txt) 
+    d = ImageDraw.Draw(txt)
 
     # draw text, half opacity
     d.text((10,10), "Hello", font=fnt, fill=(255,255,255,128))
@@ -277,21 +277,6 @@ these methods. Do not mix the old and new calling conventions.
 .. py:function:: PIL.ImageDraw.ImageDraw(image)
 
     :rtype: :py:class:`~PIL.ImageDraw.Draw`
-
-.. py:method:: PIL.ImageDraw.Draw.setink(ink)
-
-    .. deprecated:: 1.1.5
-
-    Sets the color to use for subsequent draw and fill operations.
-
-.. py:method:: PIL.ImageDraw.Draw.setfill(fill)
-
-    .. deprecated:: 1.1.5
-
-    Sets the fill mode.
-
-    If the mode is 0, subsequently drawn shapes (like polygons and rectangles)
-    are outlined. If the mode is 1, they are filled.
 
 .. py:method:: PIL.ImageDraw.Draw.setfont(font)
 

@@ -30,12 +30,9 @@
 from PIL import Image
 from PIL._util import isPath
 import io
-import logging
 import os
 import sys
-import traceback
-
-logger = logging.getLogger(__name__)
+import struct
 
 MAXBLOCK = 65536
 
@@ -101,8 +98,8 @@ class ImageFile(Image.Image):
         except (IndexError,  # end of data
                 TypeError,  # end of data (ord)
                 KeyError,  # unsupported mode
-                EOFError) as v:  # got header but not the first frame
-            logger.exception("%s")
+                EOFError,  # got header but not the first frame
+                struct.error) as v:
             raise SyntaxError(v)
 
         if not self.mode or self.size[0] <= 0:
@@ -189,9 +186,6 @@ class ImageFile(Image.Image):
             except AttributeError:
                 prefix = b""
 
-            # Buffer length read; assign a default value
-            t = 0
-
             for d, e, o, a in self.tile:
                 d = Image._getdecoder(self.mode, d, a, self.decoderconfig)
                 seek(o)
@@ -200,15 +194,14 @@ class ImageFile(Image.Image):
                 except ValueError:
                     continue
                 b = prefix
-                t = len(b)
                 while True:
                     try:
                         s = read(self.decodermaxblock)
-                    except IndexError as ie:  # truncated png/gif
+                    except (IndexError, struct.error):  # truncated png/gif
                         if LOAD_TRUNCATED_IMAGES:
                             break
                         else:
-                            raise IndexError(ie)
+                            raise IOError("image file is truncated")
 
                     if not s and not d.handles_eof:  # truncated jpeg
                         self.tile = []
@@ -229,7 +222,6 @@ class ImageFile(Image.Image):
                     if n < 0:
                         break
                     b = b[n:]
-                    t = t + n
                 # Need to cleanup here to prevent leaks in PyPy
                 d.cleanup()
 
@@ -238,7 +230,7 @@ class ImageFile(Image.Image):
 
         self.fp = None  # might be shared
 
-        if not self.map and (not LOAD_TRUNCATED_IMAGES or t == 0) and e < 0:
+        if not self.map and not LOAD_TRUNCATED_IMAGES and e < 0:
             # still raised if decoder fails to return anything
             raise_ioerror(e)
 
@@ -461,6 +453,9 @@ def _save(im, fp, tile, bufsize=0):
     # But, it would need at least the image size in most cases. RawEncode is
     # a tricky case.
     bufsize = max(MAXBLOCK, bufsize, im.size[0] * 4)  # see RawEncode.c
+    if fp == sys.stdout:
+        fp.flush()
+        return
     try:
         fh = fp.fileno()
         fp.flush()
@@ -490,10 +485,8 @@ def _save(im, fp, tile, bufsize=0):
             if s < 0:
                 raise IOError("encoder error %d when writing image file" % s)
             e.cleanup()
-    try:
+    if hasattr(fp, "flush"):
         fp.flush()
-    except:
-        pass
 
 
 def _safe_read(fp, size):

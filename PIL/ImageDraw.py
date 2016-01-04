@@ -31,21 +31,17 @@
 #
 
 import numbers
+import warnings
 
 from PIL import Image, ImageColor
 from PIL._util import isStringType
-
-try:
-    import warnings
-except ImportError:
-    warnings = None
-
 
 ##
 # A simple 2D drawing interface for PIL images.
 # <p>
 # Application code should use the <b>Draw</b> factory, instead of
 # directly.
+
 
 class ImageDraw(object):
 
@@ -90,38 +86,17 @@ class ImageDraw(object):
         self.fill = 0
         self.font = None
 
-    ##
-    # Set the default pen color.
-
     def setink(self, ink):
-        # compatibility
-        if warnings:
-            warnings.warn(
-                "'setink' is deprecated; use keyword arguments instead",
-                DeprecationWarning, stacklevel=2
-                )
-        if isStringType(ink):
-            ink = ImageColor.getcolor(ink, self.mode)
-        if self.palette and not isinstance(ink, numbers.Number):
-            ink = self.palette.getcolor(ink)
-        self.ink = self.draw.draw_ink(ink, self.mode)
-
-    ##
-    # Set the default background color.
+        raise Exception("setink() has been removed. " +
+                        "Please use keyword arguments instead.")
 
     def setfill(self, onoff):
-        # compatibility
-        if warnings:
-            warnings.warn(
-                "'setfill' is deprecated; use keyword arguments instead",
-                DeprecationWarning, stacklevel=2
-                )
-        self.fill = onoff
-
-    ##
-    # Set the default font.
+        raise Exception("setfill() has been removed. " +
+                        "Please use keyword arguments instead.")
 
     def setfont(self, font):
+        warnings.warn("setfont() is deprecated. " +
+                      "Please set the attribute directly instead.")
         # compatibility
         self.font = font
 
@@ -287,15 +262,15 @@ class ImageDraw(object):
             self.draw.draw_bitmap(xy, mask, ink)
 
     def multiline_text(self, xy, text, fill=None, font=None, anchor=None,
-                       spacing=0, align="left"):
-        widths, heights = [], []
+                       spacing=4, align="left"):
+        widths = []
         max_width = 0
         lines = self._multiline_split(text)
+        line_spacing = self.textsize('A', font=font)[1] + spacing
         for line in lines:
             line_width, line_height = self.textsize(line, font)
             widths.append(line_width)
             max_width = max(max_width, line_width)
-            heights.append(line_height)
         left, top = xy
         for idx, line in enumerate(lines):
             if align == "left":
@@ -307,7 +282,7 @@ class ImageDraw(object):
             else:
                 assert False, 'align must be "left", "center" or "right"'
             self.text((left, top), line, fill, font, anchor)
-            top += heights[idx] + spacing
+            top += line_spacing
             left = xy[0]
 
     ##
@@ -321,15 +296,14 @@ class ImageDraw(object):
             font = self.getfont()
         return font.getsize(text)
 
-    def multiline_textsize(self, text, font=None, spacing=0):
+    def multiline_textsize(self, text, font=None, spacing=4):
         max_width = 0
-        height = 0
         lines = self._multiline_split(text)
+        line_spacing = self.textsize('A', font=font)[1] + spacing
         for line in lines:
             line_width, line_height = self.textsize(line, font)
-            height += line_height + spacing
             max_width = max(max_width, line_width)
-        return max_width, height
+        return max_width, len(lines)*line_spacing
 
 
 ##

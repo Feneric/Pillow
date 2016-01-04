@@ -250,6 +250,7 @@ _MODE_CONV = {
     "CMYK": ('|u1', 4),
     "YCbCr": ('|u1', 3),
     "LAB": ('|u1', 3),  # UNDONE - unsigned |u1i1i1
+    "HSV": ('|u1', 3),
     # I;16 == I;16L, and I;32 == I;32L
     "I;16": ('<u2', None),
     "I;16B": ('>u2', None),
@@ -550,7 +551,7 @@ class Image(object):
         try:
             self.fp.close()
         except Exception as msg:
-            logger.debug("Error closing: %s" % msg)
+            logger.debug("Error closing: %s", msg)
 
         # Instead of simply setting to None, we're setting up a
         # deferred error that will better explain that the core image
@@ -622,6 +623,7 @@ class Image(object):
             new['shape'] = shape
             new['typestr'] = typestr
             new['data'] = self.tobytes()
+            new['version'] = 3
             return new
         raise AttributeError(name)
 
@@ -647,7 +649,14 @@ class Image(object):
 
     def tobytes(self, encoder_name="raw", *args):
         """
-        Return image as a bytes object
+        Return image as a bytes object.
+
+        .. warning::
+
+            This method returns the raw image data from the internal
+            storage.  For compressed image data (e.g. PNG, JPEG) use
+            :meth:`~.save`, with a BytesIO parameter for in-memory
+            data.
 
         :param encoder_name: What encoder to use.  The default is to
                              use the standard "raw" encoder.
@@ -681,18 +690,9 @@ class Image(object):
 
         return b"".join(data)
 
-    # Declare tostring as alias to tobytes
     def tostring(self, *args, **kw):
-        """Deprecated alias to tobytes.
-
-        .. deprecated:: 2.0
-        """
-        warnings.warn(
-            'tostring() is deprecated. Please call tobytes() instead.',
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.tobytes(*args, **kw)
+        raise Exception("tostring() has been removed. " +
+                        "Please call tobytes() instead.")
 
     def tobitmap(self, name="image"):
         """
@@ -742,14 +742,8 @@ class Image(object):
             raise ValueError("cannot decode image data")
 
     def fromstring(self, *args, **kw):
-        """Deprecated alias to frombytes.
-
-        .. deprecated:: 2.0
-        """
-        warnings.warn(
-            'fromstring() is deprecated. Please call frombytes() instead.',
-            DeprecationWarning)
-        return self.frombytes(*args, **kw)
+        raise Exception("fromstring() has been removed. " +
+                        "Please call frombytes() instead.")
 
     def load(self):
         """
@@ -822,7 +816,7 @@ class Image(object):
 
         :param mode: The requested mode. See: :ref:`concept-modes`.
         :param matrix: An optional conversion matrix.  If given, this
-           should be 4- or 16-tuple containing floating point values.
+           should be 4- or 12-tuple containing floating point values.
         :param dither: Dithering method, used when converting from
            mode "RGB" to "P" or from "RGB" or "L" to "1".
            Available methods are NONE or FLOYDSTEINBERG (default).
@@ -1248,27 +1242,8 @@ class Image(object):
         return self.im.histogram()
 
     def offset(self, xoffset, yoffset=None):
-        """
-        .. deprecated:: 2.0
-
-        .. note:: New code should use :py:func:`PIL.ImageChops.offset`.
-
-        Returns a copy of the image where the data has been offset by the given
-        distances. Data wraps around the edges. If **yoffset** is omitted, it
-        is assumed to be equal to **xoffset**.
-
-        :param xoffset: The horizontal distance.
-        :param yoffset: The vertical distance.  If omitted, both
-           distances are set to the same value.
-        :returns: An :py:class:`~PIL.Image.Image` object.
-        """
-        if warnings:
-            warnings.warn(
-                "'offset' is deprecated; use 'ImageChops.offset' instead",
-                DeprecationWarning, stacklevel=2
-                )
-        from PIL import ImageChops
-        return ImageChops.offset(self, xoffset, yoffset)
+        raise Exception("offset() has been removed. " +
+                        "Please call ImageChops.offset() instead.")
 
     def paste(self, im, box=None, mask=None):
         """
@@ -1621,7 +1596,7 @@ class Image(object):
         if self.mode in ("1", "P"):
             resample = NEAREST
 
-        return self._new(self.im.rotate(angle, resample))
+        return self._new(self.im.rotate(angle, resample, expand))
 
     def save(self, fp, format=None, **params):
         """
@@ -1640,7 +1615,7 @@ class Image(object):
         implement the ``seek``, ``tell``, and ``write``
         methods, and be opened in binary mode.
 
-        :param fp: File name or file object.
+        :param fp: A filename (string), pathlib.Path object or file object.
         :param format: Optional format override.  If omitted, the
            format to use is determined from the filename extension.
            If a file object was used instead of a filename, this
@@ -1653,13 +1628,19 @@ class Image(object):
            may have been created, and may contain partial data.
         """
 
+        filename = ""
+        open_fp = False
         if isPath(fp):
             filename = fp
-        else:
-            if hasattr(fp, "name") and isPath(fp.name):
-                filename = fp.name
-            else:
-                filename = ""
+            open_fp = True
+        elif sys.version_info >= (3, 4):
+            from pathlib import Path
+            if isinstance(fp, Path):
+                filename = str(fp.resolve())
+                open_fp = True
+        elif hasattr(fp, "name") and isPath(fp.name):
+            # only set the name for metadata purposes
+            filename = fp.name
 
         # may mutate self!
         self.load()
@@ -1687,17 +1668,14 @@ class Image(object):
         else:
             save_handler = SAVE[format.upper()]
 
-        if isPath(fp):
-            fp = builtins.open(fp, "wb")
-            close = 1
-        else:
-            close = 0
+        if open_fp:
+            fp = builtins.open(filename, "wb")
 
         try:
             save_handler(self, fp, filename)
         finally:
             # do what we can to clean up
-            if close:
+            if open_fp:
                 fp.close()
 
     def seek(self, frame):
@@ -2081,16 +2059,8 @@ def frombytes(mode, size, data, decoder_name="raw", *args):
 
 
 def fromstring(*args, **kw):
-    """Deprecated alias to frombytes.
-
-    .. deprecated:: 2.0
-    """
-    warnings.warn(
-        'fromstring() is deprecated. Please call frombytes() instead.',
-        DeprecationWarning,
-        stacklevel=2
-    )
-    return frombytes(*args, **kw)
+    raise Exception("fromstring() has been removed. " +
+                    "Please call frombytes() instead.")
 
 
 def frombuffer(mode, size, data, decoder_name="raw", *args):
@@ -2134,13 +2104,12 @@ def frombuffer(mode, size, data, decoder_name="raw", *args):
 
     if decoder_name == "raw":
         if args == ():
-            if warnings:
-                warnings.warn(
-                    "the frombuffer defaults may change in a future release; "
-                    "for portability, change the call to read:\n"
-                    "  frombuffer(mode, size, data, 'raw', mode, 0, 1)",
-                    RuntimeWarning, stacklevel=2
-                )
+            warnings.warn(
+                "the frombuffer defaults may change in a future release; "
+                "for portability, change the call to read:\n"
+                "  frombuffer(mode, size, data, 'raw', mode, 0, 1)",
+                RuntimeWarning, stacklevel=2
+            )
             args = mode, 0, -1  # may change to (mode, 0, 1) post-1.1.6
         if args[0] in _MAPMODES:
             im = new(mode, (1, 1))
@@ -2265,9 +2234,10 @@ def open(fp, mode="r"):
     :py:meth:`~PIL.Image.Image.load` method).  See
     :py:func:`~PIL.Image.new`.
 
-    :param fp: A filename (string) or a file object.  The file object
-       must implement :py:meth:`~file.read`, :py:meth:`~file.seek`, and
-       :py:meth:`~file.tell` methods, and be opened in binary mode.
+    :param fp: A filename (string), pathlib.Path object or a file object.
+       The file object must implement :py:meth:`~file.read`,
+       :py:meth:`~file.seek`, and :py:meth:`~file.tell` methods,
+       and be opened in binary mode.
     :param mode: The mode.  If given, this argument must be "r".
     :returns: An :py:class:`~PIL.Image.Image` object.
     :exception IOError: If the file cannot be found, or the image cannot be
@@ -2277,11 +2247,15 @@ def open(fp, mode="r"):
     if mode != "r":
         raise ValueError("bad mode %r" % mode)
 
+    filename = ""
     if isPath(fp):
         filename = fp
-        fp = builtins.open(fp, "rb")
-    else:
-        filename = ""
+    elif sys.version_info >= (3, 4):
+        from pathlib import Path
+        if isinstance(fp, Path):
+            filename = str(fp.resolve())
+    if filename:
+        fp = builtins.open(filename, "rb")
 
     try:
         fp.seek(0)
@@ -2292,19 +2266,7 @@ def open(fp, mode="r"):
 
     preinit()
 
-    for i in ID:
-        try:
-            factory, accept = OPEN[i]
-            if not accept or accept(prefix):
-                fp.seek(0)
-                im = factory(fp, filename)
-                _decompression_bomb_check(im.size)
-                return im
-        except (SyntaxError, IndexError, TypeError, struct.error):
-            logger.debug("", exc_info=True)
-
-    if init():
-
+    def _open_core(fp, filename, prefix):
         for i in ID:
             try:
                 factory, accept = OPEN[i]
@@ -2314,14 +2276,27 @@ def open(fp, mode="r"):
                     _decompression_bomb_check(im.size)
                     return im
             except (SyntaxError, IndexError, TypeError, struct.error):
-                logger.debug("", exc_info=True)
+                # Leave disabled by default, spams the logs with image
+                # opening failures that are entirely expected.
+                # logger.debug("", exc_info=True)
+                continue
+        return None
+
+    im = _open_core(fp, filename, prefix)
+
+    if im is None:
+        if init():
+            im = _open_core(fp, filename, prefix)
+
+    if im:
+        return im
 
     raise IOError("cannot identify image file %r"
                   % (filename if filename else fp))
 
-
 #
 # Image processing.
+
 
 def alpha_composite(im1, im2):
     """

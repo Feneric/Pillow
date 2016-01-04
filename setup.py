@@ -90,7 +90,7 @@ except (ImportError, OSError):
 
 
 NAME = 'Pillow'
-PILLOW_VERSION = '3.0.0.dev0'
+PILLOW_VERSION = '3.2.0.dev0'
 TCL_ROOT = None
 JPEG_ROOT = None
 JPEG2K_ROOT = None
@@ -105,7 +105,7 @@ class pil_build_ext(build_ext):
     class feature:
         zlib = jpeg = tiff = freetype = tcl = tk = lcms = webp = webpmux = None
         jpeg2000 = None
-        required = []
+        required = set(['jpeg', 'zlib'])
 
         def require(self, feat):
             return feat in self.required
@@ -139,12 +139,13 @@ class pil_build_ext(build_ext):
         for x in self.feature:
             if getattr(self, 'disable_%s' % x):
                 setattr(self.feature, x, False)
+                self.feature.required.discard(x)
                 if getattr(self, 'enable_%s' % x):
                     raise ValueError(
                         'Conflicting options: --enable-%s and --disable-%s'
                         % (x, x))
             if getattr(self, 'enable_%s' % x):
-                self.feature.required.append(x)
+                self.feature.required.add(x)
 
     def build_extensions(self):
 
@@ -242,7 +243,7 @@ class pil_build_ext(build_ext):
         elif sys.platform.startswith("linux"):
             arch_tp = (plat.processor(), plat.architecture()[0])
             if arch_tp == ("x86_64", "32bit"):
-                # 32 bit build on 64 bit machine.
+                # 32-bit build on 64-bit machine.
                 _add_directory(library_dirs, "/usr/lib/i386-linux-gnu")
             else:
                 for platform_ in arch_tp:
@@ -301,13 +302,20 @@ class pil_build_ext(build_ext):
         elif sys.platform.startswith("gnu"):
             self.add_multiarch_paths()
 
+        elif sys.platform.startswith("freebsd"):
+            _add_directory(library_dirs, "/usr/local/lib")
+            _add_directory(include_dirs, "/usr/local/include")
+
         elif sys.platform.startswith("netbsd"):
-                    _add_directory(library_dirs, "/usr/pkg/lib")
-                    _add_directory(include_dirs, "/usr/pkg/include")
+            _add_directory(library_dirs, "/usr/pkg/lib")
+            _add_directory(include_dirs, "/usr/pkg/include")
+
+        elif sys.platform.startswith("sunos5"):
+                    _add_directory(library_dirs, "/opt/local/lib")
+                    _add_directory(include_dirs, "/opt/local/include")
 
         # FIXME: check /opt/stuff directories here?
 
-        #
         # locate tkinter libraries
 
         if _tkinter:
@@ -502,6 +510,10 @@ class pil_build_ext(build_ext):
 
         for f in feature:
             if not getattr(feature, f) and feature.require(f):
+                if f in ('jpeg', 'libz'):
+                    raise ValueError('%s is required unless explicitly disabled'
+                                     ' using --disable-%s, aborting' %
+                                     (f, f))
                 raise ValueError(
                     '--enable-%s requested but %s not found, aborting.'
                     % (f, f))
@@ -545,10 +557,6 @@ class pil_build_ext(build_ext):
         if feature.freetype:
             exts.append(Extension(
                 "PIL._imagingft", ["_imagingft.c"], libraries=["freetype"]))
-
-        if os.path.isfile("_imagingtiff.c") and feature.tiff:
-            exts.append(Extension(
-                "PIL._imagingtiff", ["_imagingtiff.c"], libraries=["tiff"]))
 
         if os.path.isfile("_imagingcms.c") and feature.lcms:
             extra = []
@@ -752,7 +760,7 @@ setup(
     ext_modules=[Extension("PIL._imaging", ["_imaging.c"])],
     include_package_data=True,
     packages=find_packages(),
-    scripts=glob.glob("Scripts/pil*.py"),
+    scripts=glob.glob("Scripts/*.py"),
     test_suite='nose.collector',
     keywords=["Imaging", ],
     license='Standard PIL License',

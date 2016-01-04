@@ -2,9 +2,9 @@ import os
 
 SF_MIRROR = 'http://iweb.dl.sourceforge.net'
 
-pythons = {#'26': 7,
+pythons = {  # '26': 7,
            '27': 7,
-           #'32': 7,
+           # '32': 7,
            '33': 7.1,
            '34': 7.1}
 
@@ -23,14 +23,14 @@ libs = {
         'dir': 'jpeg-9a',
     },
     'tiff': {
-        'url': 'ftp://ftp.remotesensing.org/pub/libtiff/tiff-4.0.4.zip',
-        'hash': 'md5:8f538a34156188f9a8dcddb679c65d1e',
-        'dir': 'tiff-4.0.4',
+        'url': 'ftp://ftp.remotesensing.org/pub/libtiff/tiff-4.0.6.zip',
+        'hash': 'md5:f5b485d750b2001255ed64224b98b857',
+        'dir': 'tiff-4.0.6',
     },
     'freetype': {
-        'url': 'http://download.savannah.gnu.org/releases/freetype/freetype-2.6.tar.gz',
-        'hash': 'md5:1d733ea6c1b7b3df38169fbdbec47d2b',
-        'dir': 'freetype-2.6',
+        'url': 'http://download.savannah.gnu.org/releases/freetype/freetype-2.6.2.tar.gz',
+        'hash': 'md5:c408547878f1f5a3700881a8bbf1c644',
+        'dir': 'freetype-2.6.2',
     },
     'lcms': {
         'url': SF_MIRROR+'/project/lcms/lcms/2.7/lcms2-2.7.zip',
@@ -46,7 +46,7 @@ libs = {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.5.18/tk8518-src.zip',
         'hash': 'sha1:273f55148777413774aa722ecad25cabda1e31ae',
         'dir': '',
-        'version':'8.5.18',
+        'version': '8.5.18',
     },
     'tcl-8.6': {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.6.4/tcl864-src.zip',
@@ -57,12 +57,12 @@ libs = {
         'url': SF_MIRROR+'/project/tcl/Tcl/8.6.4/tk864-src.zip',
         'hash': 'md5:111d45061a69e7f5250b6ec8ca7c4f35',
         'dir': '',
-        'version':'8.6.4',
+        'version': '8.6.4',
     },
     'webp': {
-        'url': 'http://downloads.webmproject.org/releases/webp/libwebp-0.4.3.tar.gz',
-        'hash': 'sha1:1c307a61c4d0018620b4ba9a58e8f48a8d6640ef',
-        'dir': 'libwebp-0.4.3',
+        'url': 'http://downloads.webmproject.org/releases/webp/libwebp-0.5.0.tar.gz',
+        'hash': 'sha1:d3de815b272fcf88fc4f2dc1ab65d176bcb8df68',
+        'dir': 'libwebp-0.5.0',
     },
     'openjpeg': {
         'url': SF_MIRROR+'/project/openjpeg/openjpeg/2.1.0/openjpeg-2.1.0.tar.gz',
