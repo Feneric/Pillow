@@ -24,6 +24,14 @@ class TestImageSequence(PillowTestCase):
 
         self.assertRaises(AttributeError, lambda: ImageSequence.Iterator(0))
 
+    def test_iterator(self):
+        im = Image.open('Tests/images/multipage.tiff')
+        i = ImageSequence.Iterator(im)
+        for index in range(0, im.n_frames):
+            self.assertEqual(i[index], next(i))
+        self.assertRaises(IndexError, lambda: i[index+1])
+        self.assertRaises(StopIteration, lambda: next(i))
+
     def _test_multipage_tiff(self):
         im = Image.open('Tests/images/multipage.tiff')
         for index, frame in enumerate(ImageSequence.Iterator(im)):
@@ -43,6 +51,17 @@ class TestImageSequence(PillowTestCase):
         TiffImagePlugin.READ_LIBTIFF = True
         self._test_multipage_tiff()
         TiffImagePlugin.READ_LIBTIFF = False
+
+    def test_consecutive(self):
+        im = Image.open('Tests/images/multipage.tiff')
+        firstFrame = None
+        for frame in ImageSequence.Iterator(im):
+            if firstFrame == None:
+                firstFrame = frame.copy()
+            pass
+        for frame in ImageSequence.Iterator(im):
+            self.assert_image_equal(frame, firstFrame)
+            break
 
 if __name__ == '__main__':
     unittest.main()

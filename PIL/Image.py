@@ -95,7 +95,7 @@ except ImportError as v:
             RuntimeWarning
             )
     # Fail here anyway. Don't let people run with a mostly broken Pillow.
-    # see docs/porting-pil-to-pillow.rst
+    # see docs/porting.rst
     raise
 
 try:
@@ -1295,7 +1295,7 @@ class Image(object):
             box = (0, 0) + self.size
 
         if len(box) == 2:
-            # lower left corner given; get size from image or mask
+            # upper left corner given; get size from image or mask
             if isImageType(im):
                 size = im.size
             elif isImageType(mask):
@@ -2302,8 +2302,8 @@ def alpha_composite(im1, im2):
     """
     Alpha composite im2 over im1.
 
-    :param im1: The first image.
-    :param im2: The second image.  Must have the same mode and size as
+    :param im1: The first image. Must have mode RGBA.
+    :param im2: The second image.  Must have mode RGBA, and the same size as
        the first image.
     :returns: An :py:class:`~PIL.Image.Image` object.
     """

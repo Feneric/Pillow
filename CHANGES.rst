@@ -4,8 +4,67 @@ Changelog (Pillow)
 3.2.0 (unreleased)
 ------------------
 
+- Fix EXIF tag name typos #1736
+  [zarlant, radarhere]
+
+- Updated freetype to 2.6.3 #1725
+  [radarhere]
+
+- Add a loader for the FTEX format from Independence War 2: Edge of Chaos #1688
+  [jleclanche]
+  
+- Improved alpha_composite documentation #1698
+  [radarhere]
+
+- Extend ImageDraw.text method to pass on multiline_text method specific arguments #1647
+  [radarhere]
+
+- Allow ImageSequence to seek to zero #1686
+  [radarhere]
+
+- ImageSequence Iterator is now an iterator #1649
+  [radarhere]
+
+- Updated windows test builds to jpeg9b
+  [radarhere]
+
+- Fixed support for .gbr version 1 images, added support for version 2 in GbrImagePlugin #1653
+  [wiredfool]
+  
+- Clarified which YCbCr format is used #1677
+  [radarhere]
+
+- Added TiffTags documentation, Moved windows build documentation to winbuild/ #1667
+  [wiredfool]
+
+- Add tests for OLE file based formats #1678
+  [radarhere]
+
+- Add TIFF IFD test #1671
+  [radarhere]
+
+- Add a basic DDS image plugin with more tests #1654
+  [jleclanche, hugovk, wiredfool]
+
 - Fix incorrect conditional in encode.c #1638
   [manisandro]
+
+
+3.1.1 (2016-02-04)
+------------------
+
+- Fixed an integer overflow in Resample.c causing writes in the Python heap. 
+  [nedwill]
+
+- Fixed a buffer overflow in PcdDecode.c causing a segfault when opening PhotoCD files. CVE-2016-2533
+  [wiredfool]
+
+- Fixed a buffer overflow in FliDecode.c causing a segfault when opening FLI files. CVE-2016-0775
+  [wiredfool]
+
+- Fixed a buffer overflow in TiffDecode.c causing an arbitrary amount of memory to be overwritten when opening a specially crafted invalid TIFF file. CVE-2016-0740
+  [wiredfool]
+
 
 3.1.0 (2016-01-04)
 ------------------
@@ -1191,7 +1250,7 @@ Changelog (Pillow)
 
 - Use PyCapsule for py3.1, fixes #237.
 
-- Workaround for: http://bugs.python.org/16754 in 3.2.x < 3.2.4 and 3.3.0.
+- Workaround for: http://bugs.python.org/issue16754 in 3.2.x < 3.2.4 and 3.3.0.
 
 2.0.0 (2013-03-15)
 ------------------
