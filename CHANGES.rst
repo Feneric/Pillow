@@ -4,6 +4,15 @@ Changelog (Pillow)
 3.2.0 (unreleased)
 ------------------
 
+- Fix the error reported when libz is not found #1764
+  [wiredfool]
+
+- More general error check to avoid Symbol not found: _PyUnicodeUCS2_AsLatin1String on OS X #1761
+  [wiredfool]
+
+- Added py35 to tox envlist #1724
+  [radarhere]
+
 - Fix EXIF tag name typos #1736
   [zarlant, radarhere]
 
@@ -2418,7 +2427,7 @@ Pre-fork
     + Added experimental "RGBa" mode support.
 
       An "RGBa" image is an RGBA image where the colour components
-      have have been premultipled with the alpha value.  PIL allows
+      have have been premultiplied with the alpha value.  PIL allows
       you to convert an RGBA image to an RGBa image, and to paste
       RGBa images on top of RGB images.  Since this saves a bunch
       of multiplications and shifts, it is typically about twice

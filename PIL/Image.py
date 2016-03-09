@@ -82,16 +82,20 @@ except ImportError as v:
             )
     elif str(v).startswith("The _imaging extension"):
         warnings.warn(str(v), RuntimeWarning)
-    elif "Symbol not found: _PyUnicodeUCS2_FromString" in str(v):
+    elif "Symbol not found: _PyUnicodeUCS2_" in str(v):
+        # should match _PyUnicodeUCS2_FromString and
+        # _PyUnicodeUCS2_AsLatin1String
         warnings.warn(
             "The _imaging extension was built for Python with UCS2 support; "
-            "recompile PIL or build Python --without-wide-unicode. ",
+            "recompile Pillow or build Python --without-wide-unicode. ",
             RuntimeWarning
             )
-    elif "Symbol not found: _PyUnicodeUCS4_FromString" in str(v):
+    elif "Symbol not found: _PyUnicodeUCS4_" in str(v):
+        # should match _PyUnicodeUCS4_FromString and
+        # _PyUnicodeUCS4_AsLatin1String
         warnings.warn(
             "The _imaging extension was built for Python with UCS4 support; "
-            "recompile PIL or build Python --with-wide-unicode. ",
+            "recompile Pillow or build Python --with-wide-unicode. ",
             RuntimeWarning
             )
     # Fail here anyway. Don't let people run with a mostly broken Pillow.
@@ -2077,7 +2081,7 @@ def frombuffer(mode, size, data, decoder_name="raw", *args):
     **BytesIO** object, and use :py:func:`~PIL.Image.open` to load it.
 
     In the current version, the default parameters used for the "raw" decoder
-    differs from that used for :py:func:`~PIL.Image.fromstring`.  This is a
+    differs from that used for :py:func:`~PIL.Image.frombytes`.  This is a
     bug, and will probably be fixed in a future release.  The current release
     issues a warning if you do this; to disable the warning, you should provide
     the full set of parameters.  See below for details.
