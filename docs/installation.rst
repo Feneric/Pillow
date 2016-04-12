@@ -76,6 +76,26 @@ packages that previously contained PIL e.g. ``python-imaging``. Please
 consider using native operating system packages first to avoid
 installation problems and/or missing library support later.
 
+FreeBSD Installation
+^^^^^^^^^^^^^^^^^^^^
+
+Pillow can be installed on FreeBSD via the official Ports or Packages systems:
+
+**Ports**::
+
+  $ cd /usr/ports/graphics/py-pillow && make install clean
+
+**Packages**::
+
+  $ pkg install py27-pillow
+
+.. note::
+
+    The `Pillow FreeBSD port
+    <https://www.freshports.org/graphics/py-pillow/>`_ and packages
+    are tested by the ports team with all supported FreeBSD versions
+    and against Python 2.x and 3.x.
+
 
 Building From Source
 --------------------
@@ -91,8 +111,9 @@ External Libraries
 
 .. note::
 
-    You **do not need to install all external libraries supported** to
-    use Pillow's basic features.
+    You **do not need to install all supported external libraries** to
+    use Pillow's basic features. **Zlib** and **libjpeg** are required
+    by default.
 
 .. note::
 
@@ -181,6 +202,11 @@ Build Options
   the libraries are not found. Webpmux (WebP metadata) relies on WebP
   support. Tcl and Tk also must be used together.
 
+* Build flags: ``--debug``. Adds a debugging flag to the include and
+  library search process to dump all paths searched for and found to
+  stdout.
+
+
 Sample Usage::
 
     $ MAX_CONCURRENCY=1 python setup.py build_ext --enable-[feature] install
@@ -250,7 +276,9 @@ Or for Python 3::
 
 In Fedora, the command is::
 
-    $ sudo yum install python-devel
+    $ sudo dnf install python-devel redhat-rpm-config
+
+.. Note:: ``redhat-rpm-config`` is required on Fedora 23, but not earlier versions.
 
 Prerequisites are installed on **Ubuntu 12.04 LTS** or **Raspian Wheezy
 7.0** with::
@@ -263,12 +291,10 @@ Prerequisites are installed on **Ubuntu 14.04 LTS** with::
     $ sudo apt-get install libtiff5-dev libjpeg8-dev zlib1g-dev \
         libfreetype6-dev liblcms2-dev libwebp-dev tcl8.6-dev tk8.6-dev python-tk
 
-Prerequisites are installed on **Fedora 20** with::
+Prerequisites are installed on **Fedora 23** with::
 
-    $ sudo yum install libtiff-devel libjpeg-devel libzip-devel freetype-devel \
+    $ sudo dnf install libtiff-devel libjpeg-devel libzip-devel freetype-devel \
         lcms2-devel libwebp-devel tcl-devel tk-devel
-
-
 
 
 
@@ -288,7 +314,7 @@ current versions of Linux, OS X, and Windows.
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
 |**Operating system**              |**Supported**|**Tested Python versions**    |**Latest tested Pillow version**|**Tested processors**  |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
-| Mac OS X 10.11 El Capitan        |Yes          | 2.7,3.3,3.4,3.5              | 3.1.1                          |x86-64                 |
+| Mac OS X 10.11 El Capitan        |Yes          | 2.7,3.3,3.4,3.5              | 3.2.0                          |x86-64                 |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
 | Mac OS X 10.10 Yosemite          |Yes          | 2.7,3.3,3.4                  | 3.0.0                          |x86-64                 |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+

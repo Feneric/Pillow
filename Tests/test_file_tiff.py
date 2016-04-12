@@ -84,7 +84,7 @@ class TestFileTiff(PillowTestCase):
         self.assertIsInstance(im.tag[X_RESOLUTION][0], tuple)
         self.assertIsInstance(im.tag[Y_RESOLUTION][0], tuple)
 
-        #v2 api
+        # v2 api
         self.assertIsInstance(im.tag_v2[X_RESOLUTION], TiffImagePlugin.IFDRational)
         self.assertIsInstance(im.tag_v2[Y_RESOLUTION], TiffImagePlugin.IFDRational)
 
@@ -244,31 +244,40 @@ class TestFileTiff(PillowTestCase):
         # Assert
         self.assertIsInstance(ret, str)
 
-    def test_as_dict(self):
+    def test_as_dict_deprecation(self):
         # Arrange
         filename = "Tests/images/pil136.tiff"
         im = Image.open(filename)
+
+        self.assert_warning(DeprecationWarning, lambda: im.tag_v2.as_dict())
+        self.assert_warning(DeprecationWarning, lambda: im.tag.as_dict())
+
+    def test_dict(self):
+        # Arrange
+        filename = "Tests/images/pil136.tiff"
+        im = Image.open(filename)
+
         # v2 interface
-        self.assertEqual(
-            im.tag_v2.as_dict(),
-            {256: 55, 257: 43, 258: (8, 8, 8, 8), 259: 1,
-             262: 2, 296: 2, 273: (8,), 338: (1,), 277: 4,
-             279: (9460,), 282: 72.0, 283: 72.0, 284: 1})
+        v2_tags = {256: 55, 257: 43, 258: (8, 8, 8, 8), 259: 1,
+                   262: 2, 296: 2, 273: (8,), 338: (1,), 277: 4,
+                   279: (9460,), 282: 72.0, 283: 72.0, 284: 1}
+        self.assertEqual(dict(im.tag_v2), v2_tags)
+        self.assertEqual(im.tag_v2.as_dict(), v2_tags)
 
         # legacy interface
-        self.assertEqual(
-            im.tag.as_dict(),
-            {256: (55,), 257: (43,), 258: (8, 8, 8, 8), 259: (1,),
-             262: (2,), 296: (2,), 273: (8,), 338: (1,), 277: (4,),
-             279: (9460,), 282: ((720000, 10000),),
-             283: ((720000, 10000),), 284: (1,)})
+        legacy_tags = {256: (55,), 257: (43,), 258: (8, 8, 8, 8), 259: (1,),
+                       262: (2,), 296: (2,), 273: (8,), 338: (1,), 277: (4,),
+                       279: (9460,), 282: ((720000, 10000),),
+                       283: ((720000, 10000),), 284: (1,)}
+        self.assertEqual(dict(im.tag), legacy_tags)
+        self.assertEqual(im.tag.as_dict(), legacy_tags)
 
     def test__delitem__(self):
         filename = "Tests/images/pil136.tiff"
         im = Image.open(filename)
-        len_before = len(im.ifd.as_dict())
+        len_before = len(dict(im.ifd))
         del im.ifd[256]
-        len_after = len(im.ifd.as_dict())
+        len_after = len(dict(im.ifd))
         self.assertEqual(len_before, len_after + 1)
 
     def test_load_byte(self):
@@ -328,6 +337,39 @@ class TestFileTiff(PillowTestCase):
         self.assertEqual(im.mode, "L")
         self.assert_image_similar(im, original, 7.3)
 
+    def test_gray_semibyte_per_pixel(self):
+        test_files = (
+            (
+                24.8,#epsilon
+                (#group
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2I.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2R.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2IR.tif",
+                )
+            ),
+            (
+                7.3,#epsilon
+                (#group
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4I.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4R.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4IR.tif",
+                )
+            ),
+        )
+        original = hopper("L")
+        for epsilon, group in test_files:
+            im = Image.open(group[0])
+            self.assertEqual(im.size, (128, 128))
+            self.assertEqual(im.mode, "L")
+            self.assert_image_similar(im, original, epsilon)
+            for file in group[1:]:
+                im2 = Image.open(file)
+                self.assertEqual(im2.size, (128, 128))
+                self.assertEqual(im2.mode, "L")
+                self.assert_image_equal(im, im2)
+
     def test_page_number_x_0(self):
         # Issue 973
         # Test TIFF with tag 297 (Page Number) having value of 0 0.
@@ -378,6 +420,35 @@ class TestFileTiff(PillowTestCase):
         self.assertEqual(im.tag_v2[X_RESOLUTION], 36)
         self.assertEqual(im.tag_v2[Y_RESOLUTION], 72)
 
+    def test_multipage_compression(self):
+        im = Image.open('Tests/images/compression.tif')
+
+        im.seek(0)
+        self.assertEqual(im._compression,'tiff_ccitt')
+        self.assertEqual(im.size, (10, 10))
+
+        im.seek(1)
+        self.assertEqual(im._compression,'packbits')
+        self.assertEqual(im.size, (10, 10))
+        im.load()
+
+        im.seek(0)
+        self.assertEqual(im._compression,'tiff_ccitt')
+        self.assertEqual(im.size, (10, 10))
+        im.load()
+
+    def test_save_tiff_with_jpegtables(self):
+        # Arrange
+        outfile = self.tempfile("temp.tif")
+
+        # Created with ImageMagick: convert hopper.jpg hopper_jpg.tif
+        # Contains JPEGTables (347) tag
+        infile = "Tests/images/hopper_jpg.tif"
+        im = Image.open(infile)
+
+        # Act / Assert
+        # Should not raise UnicodeDecodeError or anything else
+        im.save(outfile)
 
 if __name__ == '__main__':
     unittest.main()

@@ -8,6 +8,12 @@ clean:
 	rm -r build || true
 	find . -name __pycache__ | xargs rm -r || true
 
+BRANCHES=`git branch -a | grep -v HEAD | grep -v master | grep remote`
+co:
+	-for i in $(BRANCHES) ; do \
+        git checkout -t $$i ; \
+    done
+
 coverage: 
 	coverage erase
 	coverage run --parallel-mode --include=PIL/* selftest.py
@@ -19,6 +25,10 @@ coverage:
 
 doc:
 	$(MAKE) -C docs html
+
+doccheck:
+	$(MAKE) -C docs html
+	$(MAKE) -C docs linkcheck
 
 docserve:
 	cd docs/_build/html && python -mSimpleHTTPServer 2> /dev/null&
@@ -33,6 +43,7 @@ help:
 	@echo "  inplace        make inplace extension" 
 	@echo "  install        make and install"
 	@echo "  install-req    install documentation and test dependencies"
+	@echo "  install-venv   install in virtualenv"
 	@echo "  release-test   run code and package tests before release"
 	@echo "  test           run tests on installed pillow"
 	@echo "  upload         build and upload sdists to PyPI" 
@@ -47,6 +58,10 @@ install:
 
 install-req:
 	pip install -r requirements.txt
+
+install-venv: 
+	virtualenv .
+	bin/pip install -r requirements.txt
 
 release-test:
 	$(MAKE) install-req

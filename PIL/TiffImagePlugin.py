@@ -57,7 +57,7 @@ import struct
 import sys
 import warnings
 
-from .TiffTags import TYPES, TagInfo
+from .TiffTags import TYPES
 
 
 __version__ = "1.3.5"
@@ -141,34 +141,56 @@ OPEN_INFO = {
     (MM, 0, (1,), 1, (1,), ()): ("1", "1;I"),
     (II, 0, (1,), 2, (1,), ()): ("1", "1;IR"),
     (MM, 0, (1,), 2, (1,), ()): ("1", "1;IR"),
+    (II, 1, (1,), 1, (1,), ()): ("1", "1"),
+    (MM, 1, (1,), 1, (1,), ()): ("1", "1"),
+    (II, 1, (1,), 2, (1,), ()): ("1", "1;R"),
+    (MM, 1, (1,), 2, (1,), ()): ("1", "1;R"),
+
+    (II, 0, (1,), 1, (2,), ()): ("L", "L;2I"),
+    (MM, 0, (1,), 1, (2,), ()): ("L", "L;2I"),
+    (II, 0, (1,), 2, (2,), ()): ("L", "L;2IR"),
+    (MM, 0, (1,), 2, (2,), ()): ("L", "L;2IR"),
+    (II, 1, (1,), 1, (2,), ()): ("L", "L;2"),
+    (MM, 1, (1,), 1, (2,), ()): ("L", "L;2"),
+    (II, 1, (1,), 2, (2,), ()): ("L", "L;2R"),
+    (MM, 1, (1,), 2, (2,), ()): ("L", "L;2R"),
+
+    (II, 0, (1,), 1, (4,), ()): ("L", "L;4I"),
+    (MM, 0, (1,), 1, (4,), ()): ("L", "L;4I"),
+    (II, 0, (1,), 2, (4,), ()): ("L", "L;4IR"),
+    (MM, 0, (1,), 2, (4,), ()): ("L", "L;4IR"),
+    (II, 1, (1,), 1, (4,), ()): ("L", "L;4"),
+    (MM, 1, (1,), 1, (4,), ()): ("L", "L;4"),
+    (II, 1, (1,), 2, (4,), ()): ("L", "L;4R"),
+    (MM, 1, (1,), 2, (4,), ()): ("L", "L;4R"),
+
     (II, 0, (1,), 1, (8,), ()): ("L", "L;I"),
     (MM, 0, (1,), 1, (8,), ()): ("L", "L;I"),
     (II, 0, (1,), 2, (8,), ()): ("L", "L;IR"),
     (MM, 0, (1,), 2, (8,), ()): ("L", "L;IR"),
-    (II, 0, (3,), 1, (32,), ()): ("F", "F;32F"),
-    (MM, 0, (3,), 1, (32,), ()): ("F", "F;32BF"),
-    (II, 1, (1,), 1, (1,), ()): ("1", "1"),
-    (MM, 1, (1,), 1, (1,), ()): ("1", "1"),
-    (II, 1, (1,), 1, (4,), ()): ("L", "L;4"),
-    # ?
-    (II, 1, (1,), 2, (1,), ()): ("1", "1;R"),
-    (MM, 1, (1,), 2, (1,), ()): ("1", "1;R"),
     (II, 1, (1,), 1, (8,), ()): ("L", "L"),
     (MM, 1, (1,), 1, (8,), ()): ("L", "L"),
-    (II, 1, (1,), 1, (8, 8), (2,)): ("LA", "LA"),
-    (MM, 1, (1,), 1, (8, 8), (2,)): ("LA", "LA"),
     (II, 1, (1,), 2, (8,), ()): ("L", "L;R"),
     (MM, 1, (1,), 2, (8,), ()): ("L", "L;R"),
+
     (II, 1, (1,), 1, (12,), ()): ("I;16", "I;12"),
+
     (II, 1, (1,), 1, (16,), ()): ("I;16", "I;16"),
     (MM, 1, (1,), 1, (16,), ()): ("I;16B", "I;16B"),
     (II, 1, (2,), 1, (16,), ()): ("I;16S", "I;16S"),
     (MM, 1, (2,), 1, (16,), ()): ("I;16BS", "I;16BS"),
+
+    (II, 0, (3,), 1, (32,), ()): ("F", "F;32F"),
+    (MM, 0, (3,), 1, (32,), ()): ("F", "F;32BF"),
     (II, 1, (1,), 1, (32,), ()): ("I", "I;32N"),
     (II, 1, (2,), 1, (32,), ()): ("I", "I;32S"),
     (MM, 1, (2,), 1, (32,), ()): ("I;32BS", "I;32BS"),
     (II, 1, (3,), 1, (32,), ()): ("F", "F;32F"),
     (MM, 1, (3,), 1, (32,), ()): ("F", "F;32BF"),
+
+    (II, 1, (1,), 1, (8, 8), (2,)): ("LA", "LA"),
+    (MM, 1, (1,), 1, (8, 8), (2,)): ("LA", "LA"),
+
     (II, 2, (1,), 1, (8, 8, 8), ()): ("RGB", "RGB"),
     (MM, 2, (1,), 1, (8, 8, 8), ()): ("RGB", "RGB"),
     (II, 2, (1,), 2, (8, 8, 8), ()): ("RGB", "RGB;R"),
@@ -183,6 +205,7 @@ OPEN_INFO = {
     (MM, 2, (1,), 1, (8, 8, 8, 8), (2,)): ("RGBA", "RGBA"),
     (II, 2, (1,), 1, (8, 8, 8, 8), (999,)): ("RGBA", "RGBA"),  # Corel Draw 10
     (MM, 2, (1,), 1, (8, 8, 8, 8), (999,)): ("RGBA", "RGBA"),  # Corel Draw 10
+
     (II, 3, (1,), 1, (1,), ()): ("P", "P;1"),
     (MM, 3, (1,), 1, (1,), ()): ("P", "P;1"),
     (II, 3, (1,), 2, (1,), ()): ("P", "P;1R"),
@@ -201,10 +224,13 @@ OPEN_INFO = {
     (MM, 3, (1,), 1, (8, 8), (2,)): ("PA", "PA"),
     (II, 3, (1,), 2, (8,), ()): ("P", "P;R"),
     (MM, 3, (1,), 2, (8,), ()): ("P", "P;R"),
+
     (II, 5, (1,), 1, (8, 8, 8, 8), ()): ("CMYK", "CMYK"),
     (MM, 5, (1,), 1, (8, 8, 8, 8), ()): ("CMYK", "CMYK"),
+
     (II, 6, (1,), 1, (8, 8, 8), ()): ("YCbCr", "YCbCr"),
     (MM, 6, (1,), 1, (8, 8, 8), ()): ("YCbCr", "YCbCr"),
+
     (II, 8, (1,), 1, (8, 8, 8), ()): ("LAB", "LAB"),
     (MM, 8, (1,), 1, (8, 8, 8), ()): ("LAB", "LAB"),
 }
@@ -227,6 +253,7 @@ def _limit_rational(val, max_val):
 _load_dispatch = {}
 _write_dispatch = {}
 
+
 class IFDRational(Rational):
     """ Implements a rational class where 0/0 is a legal value to match
     the in the wild use of exif rationals.
@@ -238,8 +265,8 @@ class IFDRational(Rational):
     as a fractions.Fraction(). Delegate as appropriate
 
     """
-    
-    __slots__ = ('_numerator', '_denominator', '_val') 
+
+    __slots__ = ('_numerator', '_denominator', '_val')
 
     def __init__(self, value, denominator=1):
         """
@@ -255,7 +282,7 @@ class IFDRational(Rational):
             self._numerator = value.numerator
             self._denominator = value.denominator
             self._val = value
-        
+
         if type(value) == IFDRational:
             self._denominator = value.denominator
             self._numerator = value.numerator
@@ -265,7 +292,6 @@ class IFDRational(Rational):
         if denominator == 0:
             self._val = float('nan')
             return
-
 
         elif denominator == 1:
             if sys.hexversion < 0x2070000 and type(value) == float:
@@ -284,10 +310,9 @@ class IFDRational(Rational):
     def denominator(a):
         return a._denominator
 
-
     def limit_rational(self, max_denominator):
         """
-        
+
         :param max_denominator: Integer, the maximum denominator value
         :returns: Tuple of (numerator, denominator)
         """
@@ -304,12 +329,12 @@ class IFDRational(Rational):
     def __hash__(self):
         return self._val.__hash__()
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         return self._val == other
 
     def _delegate(op):
         def delegate(self, *args):
-            return getattr(self._val,op)(*args)
+            return getattr(self._val, op)(*args)
         return delegate
 
     """ a = ['add','radd', 'sub', 'rsub','div', 'rdiv', 'mul', 'rmul',
@@ -349,7 +374,6 @@ class IFDRational(Rational):
     __floor__ = _delegate('__floor__')
     __round__ = _delegate('__round__')
 
-    
 
 class ImageFileDirectory_v2(collections.MutableMapping):
     """This class represents a TIFF tag directory.  To speed things up, we
@@ -450,11 +474,10 @@ class ImageFileDirectory_v2(collections.MutableMapping):
     def as_dict(self):
         """Return a dictionary of the image's tags.
 
-        use `dict(ifd)` instead.
-
         .. deprecated:: 3.0.0
         """
-        # FIXME Deprecate: use dict(self)
+        warnings.warn("as_dict() is deprecated. " +
+                      "Please use dict(ifd) instead.", DeprecationWarning)
         return dict(self)
 
     def named(self):
@@ -991,6 +1014,11 @@ class TiffImageFile(ImageFile.ImageFile):
 
         return args
 
+    def load(self):
+        if self.use_load_libtiff:
+            return self._load_libtiff()
+        return super(TiffImageFile, self).load()
+
     def _load_libtiff(self):
         """ Overload method triggered when we detect a compressed tiff
             Calls out to libtiff """
@@ -1121,8 +1149,8 @@ class TiffImageFile(ImageFile.ImageFile):
 
         self.info["compression"] = self._compression
 
-        xres = self.tag_v2.get(X_RESOLUTION,1)
-        yres = self.tag_v2.get(Y_RESOLUTION,1)
+        xres = self.tag_v2.get(X_RESOLUTION, 1)
+        yres = self.tag_v2.get(Y_RESOLUTION, 1)
 
         if xres and yres:
             resunit = self.tag_v2.get(RESOLUTION_UNIT, 1)
@@ -1136,6 +1164,7 @@ class TiffImageFile(ImageFile.ImageFile):
         # build tile descriptors
         x = y = l = 0
         self.tile = []
+        self.use_load_libtiff = False
         if STRIPOFFSETS in self.tag_v2:
             # striped image
             offsets = self.tag_v2[STRIPOFFSETS]
@@ -1158,10 +1187,9 @@ class TiffImageFile(ImageFile.ImageFile):
                 # function.
                 #
                 # Setup the one tile for the whole image, then
-                # replace the existing load function with our
-                # _load_libtiff function.
+                # use the _load_libtiff function.
 
-                self.load = self._load_libtiff
+                self.use_load_libtiff = True
 
                 # To be nice on memory footprint, if there's a
                 # file descriptor, use that instead of reading
@@ -1411,14 +1439,15 @@ def _save(im, fp, filename):
         if hasattr(im, 'tag'):
             legacy_ifd = im.tag.to_v2()
         for tag, value in itertools.chain(ifd.items(),
-                                    getattr(im, 'tag_v2', {}).items(),
-                                    legacy_ifd.items()):
+                                          getattr(im, 'tag_v2', {}).items(),
+                                          legacy_ifd.items()):
             # Libtiff can only process certain core items without adding
             # them to the custom dictionary. It will segfault if it attempts
             # to add a custom tag without the dictionary entry
             #
             # UNDONE --  add code for the custom dictionary
-            if tag not in TiffTags.LIBTIFF_CORE: continue
+            if tag not in TiffTags.LIBTIFF_CORE:
+                continue
             if tag not in atts and tag not in blocklist:
                 if isinstance(value, unicode if bytes is str else str):
                     atts[tag] = value.encode('ascii', 'replace') + b"\0"

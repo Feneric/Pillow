@@ -879,6 +879,12 @@ class Image(object):
                     trns_im = Image()._new(core.new(self.mode, (1, 1)))
                     if self.mode == 'P':
                         trns_im.putpalette(self.palette)
+                        if type(t) == tuple:
+                            try:
+                                t = trns_im.palette.getcolor(t)
+                            except:
+                                raise ValueError("Couldn't allocate a palette "+
+                                                 "color for transparency")
                     trns_im.putpixel((0, 0), t)
 
                     if mode in ('L', 'RGB'):
@@ -1005,6 +1011,8 @@ class Image(object):
         self.load()
         im = self.im.copy()
         return self._new(im)
+
+    __copy__ = copy
 
     def crop(self, box=None):
         """
@@ -1640,7 +1648,7 @@ class Image(object):
         elif sys.version_info >= (3, 4):
             from pathlib import Path
             if isinstance(fp, Path):
-                filename = str(fp.resolve())
+                filename = str(fp)
                 open_fp = True
         elif hasattr(fp, "name") and isPath(fp.name):
             # only set the name for metadata purposes
@@ -1945,7 +1953,9 @@ class _ImageCrop(Image):
 
         Image.__init__(self)
 
-        x0, y0, x1, y1 = box
+        # Round to nearest integer, runs int(round(x)) when unpacking
+        x0, y0, x1, y1 = map(int, map(round, box))
+
         if x1 < x0:
             x1 = x0
         if y1 < y0:

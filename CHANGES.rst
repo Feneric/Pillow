@@ -1,8 +1,89 @@
 Changelog (Pillow)
 ==================
 
-3.2.0 (unreleased)
+3.3.0 (unreleased)
 ------------------
+
+- Added debug option for setup.py to trace header and library finding #1790
+  [wiredfool]
+
+- Fix doc building on travis #1820
+  [wiredfool]
+
+- Fix for DIB/BMP images #1813
+  [wiredfool]
+
+- Add PixarImagePlugin file extension #1809
+  [radarhere]
+
+- Catch struct.errors when verifying png files #1805
+  [wiredfool]
+
+- SpiderImagePlugin: raise an error when seeking in a non-stack file #1794
+  [radarhere, jmichalon]
+
+- Added Support for 2/4 bpp Tiff Grayscale Images #1789
+  [zwhfly]
+
+- Removed unused variable from selftest #1788
+  [radarhere]
+
+- Added warning for as_dict method (deprecated in 3.0.0) #1799
+  [radarhere]
+
+- Removed powf support for older Python versions #1784
+  [radarhere]
+
+- Health fixes #1625
+  [radarhere]
+
+3.2.0 (2016-04-01)
+------------------
+
+- Added install docs for Fedora 23 and FreeBSD #1729, #1739, #1792
+  [koobs, zandermartin, wiredfool]
+  
+- Fixed TIFF multiframe load when the frames have different compression types #1782
+  [radarhere, geka000]
+
+- Added __copy__ method to Image #1772
+  [radarhere]
+
+- Updated dates in PIL license in OleFileIO README  #1787
+  [radarhere]
+  
+- Corrected Tiff tag names #1786
+  [radarhere]
+
+- Fixed documented name of JPEG property #1783
+  [radarhere]
+
+- Fixed UnboundLocalError when loading a corrupt jpeg2k file #1780
+  [wiredfool]
+
+- Fixed integer overflow in path.c #1773
+  [wiredfool, nedwill]
+
+- Added debug to command line help text for pilprint #1766
+  [radarhere]
+
+- Expose many more fields in ICC Profiles #1756
+  [lambdafu]
+
+- Documentation changes, URL update, transpose, release checklist
+  [radarhere]
+
+- Fixed saving to nonexistant files specified by pathlib.Path objects, fixes #1747
+  [radarhere]
+
+- Round Image.crop arguments to the nearest integer, fixes #1744
+  [hugovk]
+
+- Fix uninitialized variable warning in _imaging.c:getink, fixes #486
+  [wiredfool]
+
+- Disable multiprocessing install on cygwin, fixes #1690
+  [wiredfool]
 
 - Fix the error reported when libz is not found #1764
   [wiredfool]
@@ -16,7 +97,7 @@ Changelog (Pillow)
 - Fix EXIF tag name typos #1736
   [zarlant, radarhere]
 
-- Updated freetype to 2.6.3 #1725
+- Updated freetype to 2.6.3, Tk/Tcl to 8.6.5 and 8.5.19
   [radarhere]
 
 - Add a loader for the FTEX format from Independence War 2: Edge of Chaos #1688
@@ -58,6 +139,12 @@ Changelog (Pillow)
 - Fix incorrect conditional in encode.c #1638
   [manisandro]
 
+
+3.1.2 (2016-04-01)
+------------------
+
+- Fixed an integer overflow in Jpeg2KEncode.c causing a buffer overflow. CVE-2016-3076
+  [wiredfool]
 
 3.1.1 (2016-02-04)
 ------------------

@@ -176,19 +176,20 @@ class TestFileLibTiff(LibTiffTestCase):
         # these should not crash. Seriously dummy data, most of it doesn't make
         # any sense, so we're running up against limits where we're asking
         # libtiff to do stupid things.
-        
+
         # Get the list of the ones that we should be able to write
 
-        core_items = dict((tag, info) for tag, info in [(s,TiffTags.lookup(s)) for s
+        core_items = dict((tag, info) for tag, info in [(s, TiffTags.lookup(s)) for s
                                                         in TiffTags.LIBTIFF_CORE]
                           if info.type is not None)
-        
+
         # Exclude ones that have special meaning that we're already testing them
         im = Image.open('Tests/images/hopper_g4.tif')
         for tag in im.tag_v2.keys():
             try:
                 del(core_items[tag])
-            except: pass
+            except:
+                pass
 
         # Type codes:
         #     2: "ascii",
@@ -197,12 +198,11 @@ class TestFileLibTiff(LibTiffTestCase):
         #     5: "rational",
         #     12: "double",
         # type: dummy value
-        values = { 2: 'test',
-                   3: 1,
-                   4: 2**20,
-                   5: TiffImagePlugin.IFDRational(100,1),
-                   12: 1.05 }
-
+        values = {2: 'test',
+                  3: 1,
+                  4: 2**20,
+                  5: TiffImagePlugin.IFDRational(100, 1),
+                  12: 1.05}
 
         new_ifd = TiffImagePlugin.ImageFileDirectory_v2()
         for tag, info in core_items.items():
@@ -213,17 +213,15 @@ class TestFileLibTiff(LibTiffTestCase):
             else:
                 new_ifd[tag] = tuple(values[info.type] for _ in range(info.length))
 
-        # Extra samples really doesn't make sense in this application. 
+        # Extra samples really doesn't make sense in this application.
         del(new_ifd[338])
 
         out = self.tempfile("temp.tif")
         TiffImagePlugin.WRITE_LIBTIFF = True
 
         im.save(out, tiffinfo=new_ifd)
-        
+
         TiffImagePlugin.WRITE_LIBTIFF = False
-
-
 
     def test_g3_compression(self):
         i = Image.open('Tests/images/hopper_g4_500.tif')
@@ -421,6 +419,39 @@ class TestFileLibTiff(LibTiffTestCase):
         self.assertEqual(im.mode, "L")
         self.assert_image_similar(im, original, 7.3)
 
+    def test_gray_semibyte_per_pixel(self):
+        test_files = (
+            (
+                24.8,#epsilon
+                (#group
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2I.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2R.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper2IR.tif",
+                )
+            ),
+            (
+                7.3,#epsilon
+                (#group
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4I.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4R.tif",
+                    "Tests/images/tiff_gray_2_4_bpp/hopper4IR.tif",
+                )
+            ),
+        )
+        original = hopper("L")
+        for epsilon, group in test_files:
+            im = Image.open(group[0])
+            self.assertEqual(im.size, (128, 128))
+            self.assertEqual(im.mode, "L")
+            self.assert_image_similar(im, original, epsilon)
+            for file in group[1:]:
+                im2 = Image.open(file)
+                self.assertEqual(im2.size, (128, 128))
+                self.assertEqual(im2.mode, "L")
+                self.assert_image_equal(im, im2)
+
     def test_save_bytesio(self):
         # PR 1011
         # Test TIFF saving to io.BytesIO() object.
@@ -457,7 +488,6 @@ class TestFileLibTiff(LibTiffTestCase):
         # this shouldn't crash
         im.save(out, format='TIFF')
         TiffImagePlugin.WRITE_LIBTIFF = False
-
 
 
 if __name__ == '__main__':

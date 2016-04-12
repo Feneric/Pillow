@@ -30,15 +30,16 @@ class TagInfo(namedtuple("_TagInfo", "value name type length enum")):
     def cvt_enum(self, value):
         return self.enum.get(value, value)
 
+
 def lookup(tag):
     """
     :param tag: Integer tag number
     :returns: Taginfo namedtuple, From the TAGS_V2 info if possible,
         otherwise just populating the value and name from TAGS.
         If the tag is not recognized, "unknown" is returned for the name
-        
+
     """
-    
+
     return TAGS_V2.get(tag, TagInfo(tag, TAGS.get(tag, 'unknown')))
 
 
@@ -69,9 +70,9 @@ TAGS_V2 = {
            "Transparency Mask": 4, "CMYK": 5, "YCbCr": 6, "CieLAB": 8,
            "CFA": 32803,  # TIFF/EP, Adobe DNG
            "LinearRaw": 32892}),  # Adobe DNG
-    263: ("Thresholding", SHORT, 1),
+    263: ("Threshholding", SHORT, 1),
     264: ("CellWidth", SHORT, 1),
-    265: ("CellHeight", SHORT, 1),
+    265: ("CellLength", SHORT, 1),
     266: ("FillOrder", SHORT, 1),
     269: ("DocumentName", ASCII, 1),
 
@@ -110,7 +111,7 @@ TAGS_V2 = {
     316: ("HostComputer", ASCII, 1),
     317: ("Predictor", SHORT, 1),
     318: ("WhitePoint", RATIONAL, 2),
-    319: ("PrimaryChromaticies", SHORT, 6),
+    319: ("PrimaryChromaticities", SHORT, 6),
 
     320: ("ColorMap", SHORT, 0),
     321: ("HalftoneHints", SHORT, 2),
@@ -336,7 +337,7 @@ TYPES = {}
 # These tags are handled by default in libtiff, without
 # adding to the custom dictionary. From tif_dir.c, searching for
 # case TIFFTAG in the _TIFFVSetField function:
-# Line: item. 
+# Line: item.
 # 148:	case TIFFTAG_SUBFILETYPE:
 # 151:	case TIFFTAG_IMAGEWIDTH:
 # 154:	case TIFFTAG_IMAGELENGTH:
@@ -378,22 +379,22 @@ TYPES = {}
 
 # some of these are not in our TAGS_V2 dict and were included from tiff.h
 
-LIBTIFF_CORE = set ([255, 256, 257, 258, 259, 262, 263, 266, 274, 277,
-                     278, 280, 281, 340, 341, 282, 283, 284, 286, 287,
-                     296, 297, 321, 320, 338, 32995, 322, 323, 32998,
-                     32996, 339, 32997, 330, 531, 530, 301, 532, 333,
-                     # as above
-                     269 # this has been in our tests forever, and works
-                     ])
+LIBTIFF_CORE = set([255, 256, 257, 258, 259, 262, 263, 266, 274, 277,
+                    278, 280, 281, 340, 341, 282, 283, 284, 286, 287,
+                    296, 297, 321, 320, 338, 32995, 322, 323, 32998,
+                    32996, 339, 32997, 330, 531, 530, 301, 532, 333,
+                    # as above
+                    269  # this has been in our tests forever, and works
+                    ])
 
-LIBTIFF_CORE.remove(320) # Array of short, crashes
-LIBTIFF_CORE.remove(301) # Array of short, crashes
-LIBTIFF_CORE.remove(532) # Array of long, crashes
+LIBTIFF_CORE.remove(320)  # Array of short, crashes
+LIBTIFF_CORE.remove(301)  # Array of short, crashes
+LIBTIFF_CORE.remove(532)  # Array of long, crashes
 
-LIBTIFF_CORE.remove(255) # We don't have support for subfiletypes
-LIBTIFF_CORE.remove(322) # We don't have support for tiled images in libtiff
-LIBTIFF_CORE.remove(323) # Tiled images
-LIBTIFF_CORE.remove(333) # Ink Names either
+LIBTIFF_CORE.remove(255)  # We don't have support for subfiletypes
+LIBTIFF_CORE.remove(322)  # We don't have support for tiled images in libtiff
+LIBTIFF_CORE.remove(323)  # Tiled images
+LIBTIFF_CORE.remove(333)  # Ink Names either
 
 # Note to advanced users: There may be combinations of these
 # parameters and values that when added properly, will work and
