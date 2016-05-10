@@ -245,6 +245,7 @@ _MODE_CONV = {
     # official modes
     "1": ('|b1', None),  # broken
     "L": ('|u1', None),
+    "LA": ('|u1', 2),
     "I": (_ENDIAN + 'i4', None),
     "F": (_ENDIAN + 'f4', None),
     "P": ('|u1', None),
@@ -695,7 +696,7 @@ class Image(object):
         return b"".join(data)
 
     def tostring(self, *args, **kw):
-        raise Exception("tostring() has been removed. " +
+        raise NotImplementedError("tostring() has been removed. " +
                         "Please call tobytes() instead.")
 
     def tobitmap(self, name="image"):
@@ -746,7 +747,7 @@ class Image(object):
             raise ValueError("cannot decode image data")
 
     def fromstring(self, *args, **kw):
-        raise Exception("fromstring() has been removed. " +
+        raise NotImplementedError("fromstring() has been removed. " +
                         "Please call frombytes() instead.")
 
     def load(self):
@@ -1254,7 +1255,7 @@ class Image(object):
         return self.im.histogram()
 
     def offset(self, xoffset, yoffset=None):
-        raise Exception("offset() has been removed. " +
+        raise NotImplementedError("offset() has been removed. " +
                         "Please call ImageChops.offset() instead.")
 
     def paste(self, im, box=None, mask=None):
@@ -1717,7 +1718,11 @@ class Image(object):
         debugging purposes.
 
         On Unix platforms, this method saves the image to a temporary
-        PPM file, and calls the **xv** utility.
+        PPM file, and calls either the **xv** utility or the **display**
+        utility, depending on which one can be found.
+
+        On OS X, this method saves the image to a temporary BMP file, and opens
+        it with the native Preview application.
 
         On Windows, it saves the image to a temporary BMP file, and uses
         the standard BMP display utility to show it (usually Paint).
@@ -2073,7 +2078,7 @@ def frombytes(mode, size, data, decoder_name="raw", *args):
 
 
 def fromstring(*args, **kw):
-    raise Exception("fromstring() has been removed. " +
+    raise NotImplementedError("fromstring() has been removed. " +
                     "Please call frombytes() instead.")
 
 
@@ -2215,6 +2220,7 @@ _fromarray_typemap = {
     ((1, 1), ">f4"): ("F", "F;32BF"),
     ((1, 1), "<f8"): ("F", "F;64F"),
     ((1, 1), ">f8"): ("F", "F;64BF"),
+    ((1, 1, 2), "|u1"): ("LA", "LA"),
     ((1, 1, 3), "|u1"): ("RGB", "RGB"),
     ((1, 1, 4), "|u1"): ("RGBA", "RGBA"),
     }

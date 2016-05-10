@@ -13,6 +13,7 @@ import platform as plat
 import re
 import struct
 import sys
+import subprocess
 
 from distutils.command.build_ext import build_ext
 from distutils import sysconfig
@@ -146,9 +147,13 @@ class pil_build_ext(build_ext):
         ('disable-%s' % x, None, 'Disable support for %s' % x) for x in feature
     ] + [
         ('enable-%s' % x, None, 'Enable support for %s' % x) for x in feature
-    ] + [('debug', None, 'Debug logging')]
+    ] + [
+        ('disable-platform-guessing', None, 'Disable platform guessing on Linux'),
+        ('debug', None, 'Debug logging')
+    ]
 
     def initialize_options(self):
+        self.disable_platform_guessing = None
         build_ext.initialize_options(self)
         for x in self.feature:
             setattr(self, 'disable_%s' % x, None)
@@ -220,7 +225,10 @@ class pil_build_ext(build_ext):
         #
         # add platform directories
 
-        if sys.platform == "cygwin":
+        if self.disable_platform_guessing:
+            pass
+        
+        elif sys.platform == "cygwin":
             # pythonX.Y.dll.a is in the /usr/lib/pythonX.Y/config directory
             _add_directory(library_dirs,
                            os.path.join("/usr/lib", "python%s" %
@@ -238,7 +246,6 @@ class pil_build_ext(build_ext):
             _add_directory(include_dirs, "/opt/local/include")
 
             # if Homebrew is installed, use its lib and include directories
-            import subprocess
             try:
                 prefix = subprocess.check_output(['brew', '--prefix']).strip(
                 ).decode('latin1')
@@ -318,10 +325,10 @@ class pil_build_ext(build_ext):
                     raise ValueError(
                         "Unable to identify Linux platform: `%s`" % platform_)
 
-            # XXX Kludge. Above /\ we brute force support multiarch. Here we
-            # try Barry's more general approach. Afterward, something should
-            # work ;-)
-            self.add_multiarch_paths()
+                # XXX Kludge. Above /\ we brute force support multiarch. Here we
+                # try Barry's more general approach. Afterward, something should
+                # work ;-)
+                self.add_multiarch_paths()
 
         elif sys.platform.startswith("gnu"):
             self.add_multiarch_paths()
@@ -382,16 +389,18 @@ class pil_build_ext(build_ext):
 
         # look for tcl specific subdirectory (e.g debian)
         if _tkinter:
-            tcl_dir = "/usr/include/tcl" + TCL_VERSION
-            if os.path.isfile(os.path.join(tcl_dir, "tk.h")):
-                _add_directory(include_dirs, tcl_dir)
+            if not self.disable_platform_guessing:
+                tcl_dir = "/usr/include/tcl" + TCL_VERSION
+                if os.path.isfile(os.path.join(tcl_dir, "tk.h")):
+                    _add_directory(include_dirs, tcl_dir)
 
         # standard locations
-        _add_directory(library_dirs, "/usr/local/lib")
-        _add_directory(include_dirs, "/usr/local/include")
+        if not self.disable_platform_guessing:
+            _add_directory(library_dirs, "/usr/local/lib")
+            _add_directory(include_dirs, "/usr/local/include")
 
-        _add_directory(library_dirs, "/usr/lib")
-        _add_directory(include_dirs, "/usr/include")
+            _add_directory(library_dirs, "/usr/lib")
+            _add_directory(include_dirs, "/usr/include")
 
         # on Windows, look for the OpenJPEG libraries in the location that
         # the official installer puts them
@@ -734,7 +743,7 @@ class pil_build_ext(build_ext):
         if not all:
             print("To add a missing option, make sure you have the required")
             print("library and headers.")
-            print("See https://pillow.readthedocs.org/en/latest/installation.html#building-from-source")
+            print("See https://pillow.readthedocs.io/en/latest/installation.html#building-from-source")
             print("")
 
         print("To check the build, run the selftest.py script.")
@@ -755,7 +764,7 @@ class pil_build_ext(build_ext):
             if m.group(1) < "1.2.3":
                 return m.group(1)
 
-    # http://hg.python.org/users/barry/rev/7e8deab93d5a
+    # https://hg.python.org/users/barry/rev/7e8deab93d5a
     def add_multiarch_paths(self):
         # Debian/Ubuntu multiarch support.
         # https://wiki.ubuntu.com/MultiarchSpec
@@ -763,9 +772,9 @@ class pil_build_ext(build_ext):
         tmpfile = os.path.join(self.build_temp, 'multiarch')
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
-        ret = os.system(
-            'dpkg-architecture -qDEB_HOST_MULTIARCH > %s 2> /dev/null' %
-            tmpfile)
+        with open(tmpfile, 'wb') as fp:
+            ret = subprocess.call([
+                'dpkg-architecture', '-qDEB_HOST_MULTIARCH'], stdout=fp)
         try:
             if ret >> 8 == 0:
                 fp = open(tmpfile, 'r')
@@ -794,7 +803,6 @@ setup(name=NAME,
           "Development Status :: 6 - Mature",
           "Topic :: Multimedia :: Graphics",
           "Topic :: Multimedia :: Graphics :: Capture :: Digital Camera",
-          "Topic :: Multimedia :: Graphics :: Capture :: Scanners",
           "Topic :: Multimedia :: Graphics :: Capture :: Screen Capture",
           "Topic :: Multimedia :: Graphics :: Graphics Conversion",
           "Topic :: Multimedia :: Graphics :: Viewers",

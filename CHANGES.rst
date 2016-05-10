@@ -4,13 +4,88 @@ Changelog (Pillow)
 3.3.0 (unreleased)
 ------------------
 
+- Skip tests that require libtiff if it is not installed, fixes #1866
+  [wiredfool]
+
+- Skip test when icc profile is not available, fixes #1887
+  [doko42] 
+
+- Make deprecated functions raise NotImplementedError instead of Exception. #1862, #1890
+  [daniel-leicht, radarhere]
+
+- Replaced os.system with subprocess.call in setup.py #1879
+  [radarhere]
+
+- Corrected Image show documentation #1886
+  [radarhere]
+
+- Added check for executable permissions to ImageShow #1880
+  [radarhere]
+
+- Fixed tutorial code and added explanation #1877
+  [radarhere]
+
+- Added OS X support for ImageGrab grabclipboard #1837
+  [radarhere]
+
+- Combined duplicate code in ImageTk #1856
+  [radarhere]
+
+- Added --disable-platform-guessing option to setup.py build extension, #1861
+  [angeloc]
+
+- Fixed loading Transparent PNGs with a transparent black color #1840
+  [olt]
+
+- Add support for LA mode in Image.fromarray #1865
+  [pierriko]
+
+- Make ImageFile load images in read-only mode #1864
+  [hdante]
+
+- Added _accept hook for XVThumbImagePlugin #1853
+  [radarhere]
+
+- Test TIFF with LZW compression #1855, TGA RLE file #1854
+  [hugovk]
+
+- Improved SpiderImagePlugin help text #1863
+  [radarhere]
+
+- Updated Sphinx project description #1870
+  [radarhere]
+
+- Remove support for Python 3.0 from _imaging.c #1851
+  [radarhere]
+
+- Jpeg qtables are unsigned chars #1814
+  [thebostik]
+
+- Added additional EXIF tags #1841, TIFF Tags #1821
+  [radarhere]
+
+- Changed documentation to refer to ImageSequence Iterator #1833
+  [radarhere]
+
+- Fix Fedora prerequisites in installation docs, depends script #1842
+  [living180]
+
+- Added _accept hook for PixarImagePlugin #1843
+  [radarhere]
+
+- Removed outdated scanner classifier #1823
+  [radarhere]
+
+- Combined identical error messages in _imaging #1825
+  [radarhere]
+
 - Added debug option for setup.py to trace header and library finding #1790
   [wiredfool]
 
-- Fix doc building on travis #1820
+- Fix doc building on travis #1820, #1844
   [wiredfool]
 
-- Fix for DIB/BMP images #1813
+- Fix for DIB/BMP images #1813, #1847
   [wiredfool]
 
 - Add PixarImagePlugin file extension #1809
@@ -34,7 +109,7 @@ Changelog (Pillow)
 - Removed powf support for older Python versions #1784
   [radarhere]
 
-- Health fixes #1625
+- Health fixes #1625 #1903
   [radarhere]
 
 3.2.0 (2016-04-01)
