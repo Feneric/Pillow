@@ -159,6 +159,15 @@ Many of Pillow's features require external libraries:
   * Pillow does **not** support the earlier **1.5** series which ships
     with Ubuntu and Debian.
 
+* **libimagequant** provides improved color quantization
+
+  * Pillow has been tested with libimagequant **2.6.0**
+  * Libimagequant is licensed GPLv3, which is more restrictive than
+    the Pillow license, therefore we will not be distributing binaries
+    with libimagequant support enabled.
+  * Windows support: Libimagequant requires VS2013/MSVC 18 to compile,
+    so it is unlikely to work with any Python prior to 3.5 on Windows.
+
 Once you have installed the prerequisites, run::
 
     $ pip install Pillow
@@ -190,17 +199,17 @@ Build Options
 * Build flags: ``--disable-zlib``, ``--disable-jpeg``,
   ``--disable-tiff``, ``--disable-freetype``, ``--disable-tcl``,
   ``--disable-tk``, ``--disable-lcms``, ``--disable-webp``,
-  ``--disable-webpmux``, ``--disable-jpeg2000``. Disable building the
-  corresponding feature even if the development libraries are present
-  on the building machine.
+  ``--disable-webpmux``, ``--disable-jpeg2000``, ``--disable-imagequant``.
+  Disable building the corresponding feature even if the development
+  libraries are present on the building machine.
 
 * Build flags: ``--enable-zlib``, ``--enable-jpeg``,
   ``--enable-tiff``, ``--enable-freetype``, ``--enable-tcl``,
   ``--enable-tk``, ``--enable-lcms``, ``--enable-webp``,
-  ``--enable-webpmux``, ``--enable-jpeg2000``. Require that the
-  corresponding feature is built. The build will raise an exception if
-  the libraries are not found. Webpmux (WebP metadata) relies on WebP
-  support. Tcl and Tk also must be used together.
+  ``--enable-webpmux``, ``--enable-jpeg2000``, ``--enable-imagequant``.
+  Require that the corresponding feature is built. The build will raise
+  an exception if the libraries are not found. Webpmux (WebP metadata)
+  relies on WebP support. Tcl and Tk also must be used together.
 
 * Build flag: ``--disable-platform-guessing``. Skips all of the
   platform dependent guessing of include and library directories for
@@ -224,10 +233,12 @@ or using pip::
 Building on OS X
 ^^^^^^^^^^^^^^^^
 
-Xcode is required to compile portions of Pillow. Either install the
-full package from the app store, or run ``xcode-select --install``
-from the command line.  It may be necessary to run ``sudo xcodebuild
--license`` to accept the license prior to using the tools.
+The Xcode command line tools are required to compile portions of
+Pillow. The tools are installed by running ``xcode-select --install``
+from the command line. The command line tools are required even if you
+have the full Xcode package installed.  It may be necessary to run
+``sudo xcodebuild -license`` to accept the license prior to using the
+tools.
 
 The easiest way to install external libraries is via `Homebrew
 <http://brew.sh/>`_. After you install Homebrew, run::
@@ -319,7 +330,7 @@ current versions of Linux, OS X, and Windows.
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
 |**Operating system**              |**Supported**|**Tested Python versions**    |**Latest tested Pillow version**|**Tested processors**  |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
-| Mac OS X 10.11 El Capitan        |Yes          | 2.7,3.3,3.4,3.5              | 3.2.0                          |x86-64                 |
+| Mac OS X 10.11 El Capitan        |Yes          | 2.7,3.3,3.4,3.5              | 3.3.0                          |x86-64                 |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+
 | Mac OS X 10.10 Yosemite          |Yes          | 2.7,3.3,3.4                  | 3.0.0                          |x86-64                 |
 +----------------------------------+-------------+------------------------------+--------------------------------+-----------------------+

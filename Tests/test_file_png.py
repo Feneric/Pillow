@@ -3,6 +3,7 @@ from helper import unittest, PillowTestCase, hopper
 from io import BytesIO
 
 from PIL import Image
+from PIL import ImageFile
 from PIL import PngImagePlugin
 import zlib
 
@@ -319,6 +320,33 @@ class TestFilePng(PillowTestCase):
             self.assertTrue(im.fp is not None)
             self.assertRaises((IOError, SyntaxError), im.verify)
 
+    def test_verify_ignores_crc_error(self):
+        # check ignores crc errors in ancillary chunks
+
+        chunk_data = chunk(b'tEXt', b'spam')
+        broken_crc_chunk_data = chunk_data[:-1] + b'q'  # break CRC
+
+        image_data = HEAD + broken_crc_chunk_data + TAIL
+        self.assertRaises(SyntaxError, PngImagePlugin.PngImageFile, BytesIO(image_data))
+
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            im = load(image_data)
+            self.assertTrue(im is not None)
+        finally:
+            ImageFile.LOAD_TRUNCATED_IMAGES = False
+
+    def test_verify_not_ignores_crc_error_in_required_chunk(self):
+        # check does not ignore crc errors in required chunks
+
+        image_data = MAGIC + IHDR[:-1] + b'q' + TAIL
+
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        try:
+            self.assertRaises(SyntaxError, PngImagePlugin.PngImageFile, BytesIO(image_data))
+        finally:
+            ImageFile.LOAD_TRUNCATED_IMAGES = False
+
 
     def test_roundtrip_dpi(self):
         # Check dpi roundtripping
@@ -434,25 +462,35 @@ class TestFilePng(PillowTestCase):
 
         self.assertEqual(im.info["transparency"], 0)
 
-    def test_save_icc_profile_none(self):
-        # check saving files with an ICC profile set to None (omit profile)
-        in_file = "Tests/images/icc_profile_none.png"
-        im = Image.open(in_file)
+    def test_save_icc_profile(self):
+        im = Image.open("Tests/images/icc_profile_none.png")
+        self.assertEqual(im.info['icc_profile'], None)
+
+        with_icc = Image.open("Tests/images/icc_profile.png")
+        expected_icc = with_icc.info['icc_profile']
+
+        im = roundtrip(im, icc_profile=expected_icc)
+        self.assertEqual(im.info['icc_profile'], expected_icc)
+
+    def test_discard_icc_profile(self):
+        im = Image.open('Tests/images/icc_profile.png')
+
+        im = roundtrip(im, icc_profile=None)
+        self.assertNotIn('icc_profile', im.info)
+
+    def test_roundtrip_icc_profile(self):
+        im = Image.open('Tests/images/icc_profile.png')
+        expected_icc = im.info['icc_profile']
+
+        im = roundtrip(im)
+        self.assertEqual(im.info['icc_profile'], expected_icc)
+
+    def test_roundtrip_no_icc_profile(self):
+        im = Image.open("Tests/images/icc_profile_none.png")
         self.assertEqual(im.info['icc_profile'], None)
 
         im = roundtrip(im)
         self.assertNotIn('icc_profile', im.info)
-
-    def test_roundtrip_icc_profile(self):
-        # check that we can roundtrip the icc profile
-        im = hopper('RGB')
-
-        jpeg_image = Image.open('Tests/images/flower2.jpg')
-        expected_icc = jpeg_image.info['icc_profile']
-
-        im.info['icc_profile'] = expected_icc
-        im = roundtrip(im)
-        self.assertEqual(im.info['icc_profile'], expected_icc)
 
     def test_repr_png(self):
         im = hopper()
@@ -464,5 +502,3 @@ class TestFilePng(PillowTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-# End of file

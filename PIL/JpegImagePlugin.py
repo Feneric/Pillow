@@ -195,7 +195,7 @@ def DQT(self, marker):
             raise SyntaxError("bad quantization table marker")
         v = i8(s[0])
         if v//16 == 0:
-            self.quantization[v & 15] = array.array("b", s[1:65])
+            self.quantization[v & 15] = array.array("B", s[1:65])
             s = s[65:]
         else:
             return  # FIXME: add code to read 16-bit tables!
@@ -331,6 +331,8 @@ class JpegImageFile(ImageFile.ImageFile):
             elif i == 0 or i == 0xFFFF:
                 # padded marker or junk; move on
                 s = b"\xff"
+            elif i == 0xFF00:  # Skip extraneous data (escaped 0xFF)
+                s = self.fp.read(1)
             else:
                 raise SyntaxError("no marker found")
 

@@ -71,7 +71,7 @@
  * See the README file for information on usage and redistribution.
  */
 
-#define PILLOW_VERSION "3.3.0.dev0"
+#define PILLOW_VERSION "3.4.0.dev0"
 
 #include "Python.h"
 
@@ -362,9 +362,20 @@ getbands(const char* mode)
 #define TYPE_DOUBLE (0x400|sizeof(double))
 
 static void*
-getlist(PyObject* arg, int* length, const char* wrong_length, int type)
+getlist(PyObject* arg, Py_ssize_t* length, const char* wrong_length, int type)
 {
-    int i, n, itemp;
+    /* - allocates and returns a c array of the items in the 
+          python sequence arg.
+       - the size of the returned array is in length
+       - all of the arg items must be numeric items of the type 
+          specified in type
+       - sequence length is checked against the length parameter IF
+          an error parameter is passed in wrong_length
+       - caller is responsible for freeing the memory    
+    */
+
+    Py_ssize_t i, n; 
+    int itemp;
     double dtemp;
     void* list;
     PyObject* seq;
@@ -381,7 +392,9 @@ getlist(PyObject* arg, int* length, const char* wrong_length, int type)
         return NULL;
     }
 
-    list = malloc(n * (type & 0xff));
+    /* malloc check ok, type & ff is just a sizeof(something)
+       calloc checks for overflow */
+    list = calloc(n, type & 0xff);
     if (!list)
         return PyErr_NoMemory();
 
@@ -845,7 +858,7 @@ static PyObject*
 _filter(ImagingObject* self, PyObject* args)
 {
     PyObject* imOut;
-    int kernelsize;
+    Py_ssize_t kernelsize;
     FLOAT32* kerneldata;
 
     int xsize, ysize;
@@ -859,7 +872,7 @@ _filter(ImagingObject* self, PyObject* args)
     kerneldata = getlist(kernel, &kernelsize, NULL, TYPE_FLOAT32);
     if (!kerneldata)
         return NULL;
-    if (kernelsize != xsize * ysize) {
+    if (kernelsize != (Py_ssize_t) xsize * (Py_ssize_t) ysize) {
         free(kerneldata);
         return ImagingError_ValueError("bad kernel size");
     }
@@ -1148,8 +1161,8 @@ _point(ImagingObject* self, PyObject* args)
 {
     static const char* wrong_number = "wrong number of lut entries";
 
-    int n, i;
-    int bands;
+    Py_ssize_t n;
+    int i, bands;
     Imaging im;
 
     PyObject* list;
@@ -1544,17 +1557,17 @@ _resize(ImagingObject* self, PyObject* args)
     if (imIn->xsize == xsize && imIn->ysize == ysize) {
         imOut = ImagingCopy(imIn);
     }
-    else if ( ! filter) {
+    else if (filter == IMAGING_TRANSFORM_NEAREST) {
         double a[6];
 
         memset(a, 0, sizeof a);
-        a[1] = (double) imIn->xsize / xsize;
-        a[5] = (double) imIn->ysize / ysize;
+        a[0] = (double) imIn->xsize / xsize;
+        a[4] = (double) imIn->ysize / ysize;
 
         imOut = ImagingNew(imIn->mode, xsize, ysize);
 
-        imOut = ImagingTransformAffine(
-            imOut, imIn,
+        imOut = ImagingTransform(
+            imOut, imIn, IMAGING_TRANSFORM_AFFINE,
             0, 0, xsize, ysize,
             a, filter, 1);
     }
@@ -1565,55 +1578,6 @@ _resize(ImagingObject* self, PyObject* args)
     return PyImagingNew(imOut);
 }
 
-static PyObject*
-_rotate(ImagingObject* self, PyObject* args)
-{
-    Imaging imOut;
-    Imaging imIn;
-
-    double theta;
-    int filter = IMAGING_TRANSFORM_NEAREST;
-    int expand;
-    if (!PyArg_ParseTuple(args, "d|i|i", &theta, &filter, &expand))
-        return NULL;
-
-    imIn = self->image;
-
-    theta = fmod(theta, 360.0);
-    if (theta < 0.0)
-    theta += 360;
-
-    if (filter && imIn->type != IMAGING_TYPE_SPECIAL) {
-        /* Rotate with resampling filter */
-        imOut = ImagingNew(imIn->mode, imIn->xsize, imIn->ysize);
-    (void) ImagingRotate(imOut, imIn, theta, filter);
-    } else if ((theta == 90.0 || theta == 270.0)
-            && (expand || imIn->xsize == imIn->ysize)) {
-        /* Use fast version */
-        imOut = ImagingNew(imIn->mode, imIn->ysize, imIn->xsize);
-        if (imOut) {
-            if (theta == 90.0)
-                (void) ImagingRotate90(imOut, imIn);
-            else
-                (void) ImagingRotate270(imOut, imIn);
-        }
-    } else {
-        imOut = ImagingNew(imIn->mode, imIn->xsize, imIn->ysize);
-        if (imOut) {
-            if (theta == 0.0)
-                /* No rotation: simply copy the input image */
-                (void) ImagingCopy2(imOut, imIn);
-            else if (theta == 180.0)
-                /* Use fast version */
-                (void) ImagingRotate180(imOut, imIn);
-            else
-                /* Use ordinary version */
-                (void) ImagingRotate(imOut, imIn, theta, 0);
-        }
-    }
-
-    return PyImagingNew(imOut);
-}
 
 #define IS_RGB(mode)\
     (!strcmp(mode, "RGB") || !strcmp(mode, "RGBA") || !strcmp(mode, "RGBX"))
@@ -1662,9 +1626,8 @@ _transform2(ImagingObject* self, PyObject* args)
 {
     static const char* wrong_number = "wrong number of matrix entries";
 
-    Imaging imIn;
     Imaging imOut;
-    int n;
+    Py_ssize_t n;
     double *a;
 
     ImagingObject* imagep;
@@ -1698,30 +1661,9 @@ _transform2(ImagingObject* self, PyObject* args)
     if (!a)
         return NULL;
 
-    imOut = self->image;
-    imIn = imagep->image;
-
-    /* FIXME: move transform dispatcher into libImaging */
-
-    switch (method) {
-    case IMAGING_TRANSFORM_AFFINE:
-        imOut = ImagingTransformAffine(
-            imOut, imIn, x0, y0, x1, y1, a, filter, 1
-            );
-        break;
-    case IMAGING_TRANSFORM_PERSPECTIVE:
-        imOut = ImagingTransformPerspective(
-            imOut, imIn, x0, y0, x1, y1, a, filter, 1
-            );
-        break;
-    case IMAGING_TRANSFORM_QUAD:
-        imOut = ImagingTransformQuad(
-            imOut, imIn, x0, y0, x1, y1, a, filter, 1
-            );
-        break;
-    default:
-        (void) ImagingError_ValueError("bad transform method");
-    }
+    imOut = ImagingTransform(
+        self->image, imagep->image, method,
+        x0, y0, x1, y1, a, filter, 1);
 
     free(a);
 
@@ -1920,6 +1862,7 @@ _getprojection(ImagingObject* self, PyObject* args)
     unsigned char* yprofile;
     PyObject* result;
 
+    /* malloc check ok */
     xprofile = malloc(self->image->xsize);
     yprofile = malloc(self->image->ysize);
 
@@ -2366,7 +2309,7 @@ _draw_dealloc(ImagingDrawObject* self)
     PyObject_Del(self);
 }
 
-extern int PyPath_Flatten(PyObject* data, double **xy);
+extern Py_ssize_t PyPath_Flatten(PyObject* data, double **xy);
 
 static PyObject*
 _draw_ink(ImagingDrawObject* self, PyObject* args)
@@ -2387,7 +2330,7 @@ static PyObject*
 _draw_arc(ImagingDrawObject* self, PyObject* args)
 {
     double* xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject* data;
     int ink;
@@ -2423,7 +2366,7 @@ static PyObject*
 _draw_bitmap(ImagingDrawObject* self, PyObject* args)
 {
     double *xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject *data;
     ImagingObject* bitmap;
@@ -2459,7 +2402,7 @@ static PyObject*
 _draw_chord(ImagingDrawObject* self, PyObject* args)
 {
     double* xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject* data;
     int ink, fill;
@@ -2495,7 +2438,7 @@ static PyObject*
 _draw_ellipse(ImagingDrawObject* self, PyObject* args)
 {
     double* xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject* data;
     int ink;
@@ -2546,7 +2489,7 @@ static PyObject*
 _draw_lines(ImagingDrawObject* self, PyObject* args)
 {
     double *xy;
-    int i, n;
+    Py_ssize_t i, n;
 
     PyObject *data;
     int ink;
@@ -2614,7 +2557,7 @@ static PyObject*
 _draw_points(ImagingDrawObject* self, PyObject* args)
 {
     double *xy;
-    int i, n;
+    Py_ssize_t i, n;
 
     PyObject *data;
     int ink;
@@ -2676,7 +2619,7 @@ static PyObject*
 _draw_pieslice(ImagingDrawObject* self, PyObject* args)
 {
     double* xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject* data;
     int ink, fill;
@@ -2712,7 +2655,7 @@ _draw_polygon(ImagingDrawObject* self, PyObject* args)
 {
     double *xy;
     int *ixy;
-    int n, i;
+    Py_ssize_t n, i;
 
     PyObject* data;
     int ink;
@@ -2731,7 +2674,7 @@ _draw_polygon(ImagingDrawObject* self, PyObject* args)
     }
 
     /* Copy list of vertices to array */
-    ixy = (int*) malloc(n * 2 * sizeof(int));
+    ixy = (int*) calloc(n, 2 * sizeof(int));
 
     for (i = 0; i < n; i++) {
         ixy[i+i] = (int) xy[i+i];
@@ -2756,7 +2699,7 @@ static PyObject*
 _draw_rectangle(ImagingDrawObject* self, PyObject* args)
 {
     double* xy;
-    int n;
+    Py_ssize_t n;
 
     PyObject* data;
     int ink;
@@ -3048,7 +2991,6 @@ static struct PyMethodDef methods[] = {
     // There were two methods for image resize before.
     // Starting from Pillow 2.7.0 stretch is depreciated.
     {"stretch", (PyCFunction)_resize, 1},
-    {"rotate", (PyCFunction)_rotate, 1},
     {"transpose", (PyCFunction)_transpose, 1},
     {"transform2", (PyCFunction)_transform2, 1},
 

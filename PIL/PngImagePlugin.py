@@ -109,8 +109,7 @@ class ChunkStream(object):
         cid = None
 
         if self.queue:
-            cid, pos, length = self.queue[-1]
-            del self.queue[-1]
+            cid, pos, length = self.queue.pop()
             self.fp.seek(pos)
         else:
             s = self.fp.read(8)
@@ -138,6 +137,12 @@ class ChunkStream(object):
 
     def crc(self, cid, data):
         "Read and verify checksum"
+
+        # Skip CRC checks for ancillary chunks if allowed to load truncated images
+        # 5th byte of first char is 1 [specs, section 5.4]
+        if ImageFile.LOAD_TRUNCATED_IMAGES and (i8(cid[0]) >> 5 & 1):
+            self.crc_skip(cid, data)
+            return
 
         try:
             crc1 = Image.core.crc32(data, Image.core.crc32(cid))
@@ -312,6 +317,11 @@ class PngStream(ChunkStream):
                               comp_method)
         try:
             icc_profile = _safe_zlib_decompress(s[i+2:])
+        except ValueError:
+            if ImageFile.LOAD_TRUNCATED_IMAGES:
+                icc_profile = None
+            else:
+                raise
         except zlib.error:
             icc_profile = None  # FIXME
         self.im_info["icc_profile"] = icc_profile
@@ -431,6 +441,11 @@ class PngStream(ChunkStream):
                               comp_method)
         try:
             v = _safe_zlib_decompress(v[1:])
+        except ValueError:
+            if ImageFile.LOAD_TRUNCATED_IMAGES:
+                v = b""
+            else:
+                raise
         except zlib.error:
             v = b""
 
@@ -463,6 +478,11 @@ class PngStream(ChunkStream):
             if cm == 0:
                 try:
                     v = _safe_zlib_decompress(v)
+                except ValueError:
+                    if ImageFile.LOAD_TRUNCATED_IMAGES:
+                        return s
+                    else:
+                        raise
                 except zlib.error:
                     return s
             else:
@@ -756,8 +776,8 @@ def _save(im, fp, filename, chunk=putchunk, check=0):
         for cid, data in info.chunks:
             chunk(fp, cid, data)
 
-    # ICC profile writing support -- 2008-06-06 Florian Hoech
-    if im.info.get("icc_profile"):
+    icc = im.encoderinfo.get("icc_profile", im.info.get("icc_profile"))
+    if icc:
         # ICC profile
         # according to PNG spec, the iCCP chunk contains:
         # Profile name  1-79 bytes (character string)
@@ -765,7 +785,7 @@ def _save(im, fp, filename, chunk=putchunk, check=0):
         # Compression method    1 byte (0)
         # Compressed profile    n bytes (zlib with deflate compression)
         name = b"ICC Profile"
-        data = name + b"\0\0" + zlib.compress(im.info["icc_profile"])
+        data = name + b"\0\0" + zlib.compress(icc)
         chunk(fp, b"iCCP", data)
 
     ImageFile._save(im, _idat(fp, chunk),

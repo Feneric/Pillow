@@ -1,14 +1,143 @@
 Changelog (Pillow)
 ==================
 
-3.3.0 (unreleased)
+3.4.0 (unreleased)
 ------------------
+
+- Add Box and Hamming filters for resampling #1959
+  [homm]
+
+- Retain a reference to core image object in PyAccess #2009
+  [homm]
+
+3.3.0 (2016-07-01)
+------------------
+
+- Fixed enums for Resolution Unit and Predictor in TiffTags.py #1998
+  [wiredfool]
+
+- Fix issue converting P mode to LA #1986
+  [didrix]
+  
+- Moved test_j2k_overflow to check_j2k_overflow, prevent DOS of our 32bit testing machines #1995
+  [wiredfool]
+
+- Skip CRC checks in PNG files when LOAD_TRUNCATED_IMAGES is enabled #1991
+  [kkopachev]
+
+- Added CMYK mode for opening EPS files #1826
+  [radarhere]
+
+- Docs: OSX build instruction clarification #1994
+  [wiredfool]
+
+- Docs: Filter comparison table #1993
+  [homm]
+
+- Removal of pthread based Incremental.c, new interface for file decoders/encoders to access the python file. Fixes assorted J2k Hangs. #1934
+  [wiredfool]
+
+- Skip unnecessary passes when resizing #1954
+  [homm]
+
+- Removed duplicate code in ImagePalette #1832
+  [radarhere]
+
+- test_imagecms: Reduce precision of extended info due to 32 bit machine precision #1990
+  [AbdealiJK]
+  
+- Binary Tiff Metadata/ICC profile. #1988
+  [wiredfool]
+  
+- Ignore large text blocks in PNG if LOAD_TRUNCATED_IMAGES is enabled #1970
+  [homm]
+
+- Replace index = index+1 in docs with +=1
+  [cclauss]
+
+- Skip extra 0xff00 in jpeg #1977
+  [kkopachev]
+  
+- Use bytearray for palette mutable storage #1985
+  [radarhere, wiredfool]
+
+- Added additional uint modes for Image.fromarray, more extensive tests of fromarray #1984
+  [mairsbw, wiredfool]
+
+- Fix for program importing PyQt4 when PyQt5 also installed #1942
+  [hugovk]
+
+- Changed depends/install_*.sh urls to point to github pillow-depends repo #1983
+  [wiredfool]
+  
+- Allow ICC profile from `encoderinfo` while saving PNGs #1909
+  [homm]
+
+- Fix integer overflow on ILP32 systems (32-bit Linux). #1975
+  [lambdafu]
+
+- Change function declaration to match Tcl_CmdProc type #1966
+  [homm]
+
+- Integer overflow checks on all calls to *alloc #1781
+  [wiredfool]
+
+- Change equals method on Image so it short circuits #1967
+  [mattBoros]
+ 
+- Runtime loading of TCL/TK libraries, eliminating build time dependency. #1932
+  [matthew-brett]
+
+- Cleanup of transform methods #1941
+  [homm]
+
+- Fix "Fatal Python error: UNREF invalid object" in debug builds #1936
+  [wiredfool]
+
+- Setup fixes for Alpine linux #1937
+  [wiredfool]
+
+- Split resample into horizontal + vertical passes #1933
+  [homm]
+
+- Box blur with premultiplied alpha #1914
+  [homm]
+
+- Add libimagequant support in quantize() #1889
+  [rr-]
+
+- Added internal Premultiplied luminosity (La) mode #1912
+  [homm]
+
+- Fixed point integer resample #1881
+  [homm]
+
+- Removed docs/BUILDME script #1924
+  [radarhere]
+
+- Moved comments to docstrings  #1926
+  [hugovk]
+
+- Include Python.h before wchar.h so _GNU_SOURCE is set consistently #1906
+  [hugovk]
+
+- Updated example decoder in documentation #1899
+  [radarhere]
+
+- Added support for GIF comment extension #1896
+  [radarhere]
+
+- Removed support for pre- 1.5.2 list form of Image info in Image.new #1897
+  [radarhere]
+
+- Fix typos in TIFF tags #1918
+  [radarhere]
 
 - Skip tests that require libtiff if it is not installed, fixes #1866
   [wiredfool]
 
 - Skip test when icc profile is not available, fixes #1887
-  [doko42] 
+  [doko42]
 
 - Make deprecated functions raise NotImplementedError instead of Exception. #1862, #1890
   [daniel-leicht, radarhere]
@@ -58,7 +187,7 @@ Changelog (Pillow)
 - Remove support for Python 3.0 from _imaging.c #1851
   [radarhere]
 
-- Jpeg qtables are unsigned chars #1814
+- Jpeg qtables are unsigned chars #1814, #1921
   [thebostik]
 
 - Added additional EXIF tags #1841, TIFF Tags #1821
@@ -224,7 +353,7 @@ Changelog (Pillow)
 3.1.1 (2016-02-04)
 ------------------
 
-- Fixed an integer overflow in Resample.c causing writes in the Python heap. 
+- Fixed an integer overflow in Resample.c causing writes in the Python heap.
   [nedwill]
 
 - Fixed a buffer overflow in PcdDecode.c causing a segfault when opening PhotoCD files. CVE-2016-2533

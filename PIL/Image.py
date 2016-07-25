@@ -30,6 +30,7 @@ from PIL import VERSION, PILLOW_VERSION, _plugins
 
 import logging
 import warnings
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -167,13 +168,14 @@ MESH = 4
 
 # resampling filters
 NEAREST = NONE = 0
-LANCZOS = ANTIALIAS = 1
+BOX = 4
 BILINEAR = LINEAR = 2
+HAMMING = 5
 BICUBIC = CUBIC = 3
+LANCZOS = ANTIALIAS = 1
 
 # dithers
-NONE = 0
-NEAREST = 0
+NEAREST = NONE = 0
 ORDERED = 1  # Not yet implemented
 RASTERIZE = 2  # Not yet implemented
 FLOYDSTEINBERG = 3  # default
@@ -185,6 +187,7 @@ ADAPTIVE = 1
 MEDIANCUT = 0
 MAXCOVERAGE = 1
 FASTOCTREE = 2
+LIBIMAGEQUANT = 3
 
 # categories
 NORMAL = 0
@@ -524,13 +527,7 @@ class Image(object):
         if im.mode == "P" and not new.palette:
             from PIL import ImagePalette
             new.palette = ImagePalette.ImagePalette()
-        try:
-            new.info = self.info.copy()
-        except AttributeError:
-            # fallback (pre-1.5.2)
-            new.info = {}
-            for k, v in self.info:
-                new.info[k] = v
+        new.info = self.info.copy()
         return new
 
     _makeself = _new  # compatibility
@@ -588,16 +585,14 @@ class Image(object):
         return file
 
     def __eq__(self, other):
-        if self.__class__.__name__ != other.__class__.__name__:
-            return False
-        a = (self.mode == other.mode)
-        b = (self.size == other.size)
-        c = (self.getpalette() == other.getpalette())
-        d = (self.info == other.info)
-        e = (self.category == other.category)
-        f = (self.readonly == other.readonly)
-        g = (self.tobytes() == other.tobytes())
-        return a and b and c and d and e and f and g
+        return (self.__class__.__name__ == other.__class__.__name__ and
+                self.mode == other.mode and
+                self.size == other.size and
+                self.info == other.info and
+                self.category == other.category and
+                self.readonly == other.readonly and
+                self.getpalette() == other.getpalette() and
+                self.tobytes() == other.tobytes())
 
     def __ne__(self, other):
         eq = (self == other)
@@ -967,6 +962,7 @@ class Image(object):
         :param method: 0 = median cut
                        1 = maximum coverage
                        2 = fast octree
+                       3 = libimagequant
         :param kmeans: Integer
         :param palette: Quantize to the :py:class:`PIL.ImagingPalette` palette.
         :returns: A new image
@@ -981,10 +977,11 @@ class Image(object):
             if self.mode == 'RGBA':
                 method = 2
 
-        if self.mode == 'RGBA' and method != 2:
+        if self.mode == 'RGBA' and method not in (2, 3):
             # Caller specified an invalid mode.
-            raise ValueError('Fast Octree (method == 2) is the ' +
-                             ' only valid method for quantizing RGBA images')
+            raise ValueError(
+                'Fast Octree (method == 2) and libimagequant (method == 3) ' +
+                'are the only valid methods for quantizing RGBA images')
 
         if palette:
             # use palette from reference image
@@ -998,8 +995,7 @@ class Image(object):
             im = self.im.convert("P", 1, palette.im)
             return self._makeself(im)
 
-        im = self.im.quantize(colors, method, kmeans)
-        return self._new(im)
+        return self._new(self.im.quantize(colors, method, kmeans))
 
     def copy(self):
         """
@@ -1010,8 +1006,7 @@ class Image(object):
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
         self.load()
-        im = self.im.copy()
-        return self._new(im)
+        return self._new(self.im.copy())
 
     __copy__ = copy
 
@@ -1524,16 +1519,18 @@ class Image(object):
         :param size: The requested size in pixels, as a 2-tuple:
            (width, height).
         :param resample: An optional resampling filter.  This can be
-           one of :py:attr:`PIL.Image.NEAREST` (use nearest neighbour),
-           :py:attr:`PIL.Image.BILINEAR` (linear interpolation),
-           :py:attr:`PIL.Image.BICUBIC` (cubic spline interpolation), or
-           :py:attr:`PIL.Image.LANCZOS` (a high-quality downsampling filter).
+           one of :py:attr:`PIL.Image.NEAREST`, :py:attr:`PIL.Image.BOX`,
+           :py:attr:`PIL.Image.BILINEAR`, :py:attr:`PIL.Image.HAMMING`,
+           :py:attr:`PIL.Image.BICUBIC` or :py:attr:`PIL.Image.LANCZOS`.
            If omitted, or if the image has mode "1" or "P", it is
            set :py:attr:`PIL.Image.NEAREST`.
+           See: :ref:`concept-filters`.
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
 
-        if resample not in (NEAREST, BILINEAR, BICUBIC, LANCZOS):
+        if resample not in (
+                NEAREST, BILINEAR, BICUBIC, LANCZOS, BOX, HAMMING,
+        ):
             raise ValueError("unknown resampling filter")
 
         self.load()
@@ -1544,6 +1541,9 @@ class Image(object):
 
         if self.mode in ("1", "P"):
             resample = NEAREST
+
+        if self.mode == 'LA':
+            return self.convert('La').resize(size, resample).convert('LA')
 
         if self.mode == 'RGBA':
             return self.convert('RGBa').resize(size, resample).convert('RGBA')
@@ -1563,7 +1563,7 @@ class Image(object):
            environment), or :py:attr:`PIL.Image.BICUBIC`
            (cubic spline interpolation in a 4x4 environment).
            If omitted, or if the image has mode "1" or "P", it is
-           set :py:attr:`PIL.Image.NEAREST`.
+           set :py:attr:`PIL.Image.NEAREST`. See :ref:`concept-filters`.
         :param expand: Optional expansion flag.  If true, expands the output
            image to make it large enough to hold the entire rotated image.
            If false or omitted, make the output image the same size as the
@@ -1571,20 +1571,31 @@ class Image(object):
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
 
+        angle = angle % 360.0
+
+        # Fast paths regardless of filter
+        if angle == 0:
+            return self._new(self.im)
+        if angle == 180:
+            return self.transpose(ROTATE_180)
+        if angle == 90 and expand:
+            return self.transpose(ROTATE_90)
+        if angle == 270 and expand:
+            return self.transpose(ROTATE_270)
+
+        angle = - math.radians(angle)
+        matrix = [
+            round(math.cos(angle), 15), round(math.sin(angle), 15), 0.0,
+            round(-math.sin(angle), 15), round(math.cos(angle), 15), 0.0
+            ]
+
+        def transform(x, y, matrix=matrix):
+            (a, b, c, d, e, f) = matrix
+            return a*x + b*y + c, d*x + e*y + f
+
+        w, h = self.size
         if expand:
-            import math
-            angle = -angle * math.pi / 180
-            matrix = [
-                math.cos(angle), math.sin(angle), 0.0,
-                -math.sin(angle), math.cos(angle), 0.0
-                ]
-
-            def transform(x, y, matrix=matrix):
-                (a, b, c, d, e, f) = matrix
-                return a*x + b*y + c, d*x + e*y + f
-
             # calculate output size
-            w, h = self.size
             xx = []
             yy = []
             for x, y in ((0, 0), (w, 0), (w, h), (0, h)):
@@ -1594,22 +1605,12 @@ class Image(object):
             w = int(math.ceil(max(xx)) - math.floor(min(xx)))
             h = int(math.ceil(max(yy)) - math.floor(min(yy)))
 
-            # adjust center
-            x, y = transform(w / 2.0, h / 2.0)
-            matrix[2] = self.size[0] / 2.0 - x
-            matrix[5] = self.size[1] / 2.0 - y
+        # adjust center
+        x, y = transform(w / 2.0, h / 2.0)
+        matrix[2] = self.size[0] / 2.0 - x
+        matrix[5] = self.size[1] / 2.0 - y
 
-            return self.transform((w, h), AFFINE, matrix, resample)
-
-        if resample not in (NEAREST, BILINEAR, BICUBIC):
-            raise ValueError("unknown resampling filter")
-
-        self.load()
-
-        if self.mode in ("1", "P"):
-            resample = NEAREST
-
-        return self._new(self.im.rotate(angle, resample, expand))
+        return self.transform((w, h), AFFINE, matrix, resample)
 
     def save(self, fp, format=None, **params):
         """
@@ -1660,8 +1661,7 @@ class Image(object):
 
         save_all = False
         if 'save_all' in params:
-            save_all = params['save_all']
-            del params['save_all']
+            save_all = params.pop('save_all')
         self.encoderinfo = params
         self.encoderconfig = ()
 
@@ -1835,15 +1835,21 @@ class Image(object):
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
 
+        if self.mode == 'LA':
+            return self.convert('La').transform(
+                size, method, data, resample, fill).convert('LA')
+
         if self.mode == 'RGBA':
             return self.convert('RGBa').transform(
                 size, method, data, resample, fill).convert('RGBA')
 
         if isinstance(method, ImageTransformHandler):
             return method.transform(size, self, resample=resample, fill=fill)
+
         if hasattr(method, "getdata"):
             # compatibility w. old-style transform objects
             method, data = method.getdata()
+
         if data is None:
             raise ValueError("missing method data")
 
@@ -1859,28 +1865,23 @@ class Image(object):
 
     def __transformer(self, box, image, method, data,
                       resample=NEAREST, fill=1):
-
-        # FIXME: this should be turned into a lazy operation (?)
-
-        w = box[2]-box[0]
-        h = box[3]-box[1]
+        w = box[2] - box[0]
+        h = box[3] - box[1]
 
         if method == AFFINE:
-            # change argument order to match implementation
-            data = (data[2], data[0], data[1],
-                    data[5], data[3], data[4])
+            data = data[0:6]
+
         elif method == EXTENT:
             # convert extent to an affine transform
             x0, y0, x1, y1 = data
             xs = float(x1 - x0) / w
             ys = float(y1 - y0) / h
             method = AFFINE
-            data = (x0 + xs/2, xs, 0, y0 + ys/2, 0, ys)
+            data = (xs, 0, x0 + xs/2, 0, ys, y0 + ys/2)
+
         elif method == PERSPECTIVE:
-            # change argument order to match implementation
-            data = (data[2], data[0], data[1],
-                    data[5], data[3], data[4],
-                    data[6], data[7])
+            data = data[0:8]
+
         elif method == QUAD:
             # quadrilateral warp.  data specifies the four corners
             # given as NW, SW, SE, and NE.
@@ -1895,6 +1896,7 @@ class Image(object):
                     (se[0]-sw[0]-ne[0]+x0)*As*At,
                     y0, (ne[1]-y0)*As, (sw[1]-y0)*At,
                     (se[1]-sw[1]-ne[1]+y0)*As*At)
+
         else:
             raise ValueError("unknown transformation method")
 
@@ -1931,8 +1933,7 @@ class Image(object):
         :param distance: Distance to spread pixels.
         """
         self.load()
-        im = self.im.effect_spread(distance)
-        return self._new(im)
+        return self._new(self.im.effect_spread(distance))
 
     def toqimage(self):
         """Returns a QImage copy of this image"""
@@ -2212,10 +2213,14 @@ _fromarray_typemap = {
     # ((1, 1), "|b1"): ("1", "1"), # broken
     ((1, 1), "|u1"): ("L", "L"),
     ((1, 1), "|i1"): ("I", "I;8"),
-    ((1, 1), "<i2"): ("I", "I;16"),
-    ((1, 1), ">i2"): ("I", "I;16B"),
-    ((1, 1), "<i4"): ("I", "I;32"),
-    ((1, 1), ">i4"): ("I", "I;32B"),
+    ((1, 1), "<u2"): ("I", "I;16"),
+    ((1, 1), ">u2"): ("I", "I;16B"),
+    ((1, 1), "<i2"): ("I", "I;16S"),
+    ((1, 1), ">i2"): ("I", "I;16BS"),
+    ((1, 1), "<u4"): ("I", "I;32"),
+    ((1, 1), ">u4"): ("I", "I;32B"),
+    ((1, 1), "<i4"): ("I", "I;32S"),
+    ((1, 1), ">i4"): ("I", "I;32BS"),
     ((1, 1), "<f4"): ("F", "F;32F"),
     ((1, 1), ">f4"): ("F", "F;32BF"),
     ((1, 1), "<f8"): ("F", "F;64F"),
@@ -2516,5 +2521,3 @@ def effect_noise(size, sigma):
     :param sigma: Standard deviation of noise.
     """
     return Image()._new(core.effect_noise(size, sigma))
-
-# End of file

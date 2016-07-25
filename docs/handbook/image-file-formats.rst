@@ -34,7 +34,11 @@ EPS
 
 PIL identifies EPS files containing image data, and can read files that contain
 embedded raster images (ImageData descriptors). If Ghostscript is available,
-other EPS files can be read as well. The EPS driver can also write EPS images.
+other EPS files can be read as well. The EPS driver can also write EPS
+images. The EPS driver can read EPS images in ``L``, ``LAB``, ``RGB`` and
+``CMYK`` mode, but Ghostscript may convert the images to ``RGB`` mode rather
+than leaving them in the original color space. The EPS driver can write images
+in ``L``, ``RGB`` and ``CMYK`` modes.
 
 If Ghostscript is available, you can call the :py:meth:`~PIL.Image.Image.load`
 method with the following parameter to affect how Ghostscript renders the EPS
@@ -412,6 +416,9 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
     When ``optimize`` option is True ``compress_level`` has no effect
     (it is set to 9 regardless of a value passed).
 
+**icc_profile**
+    The ICC Profile to include in the saved file.
+
 **bits (experimental)**
     For ``P`` images, this option controls how many bits to store. If omitted,
     the PNG writer uses 8 bits (256 colors).
@@ -422,8 +429,8 @@ The :py:meth:`~PIL.Image.Image.save` method supports the following options:
 .. note::
 
     To enable PNG support, you need to build and install the ZLIB compression
-    library before building the Python Imaging Library. See the distribution
-    README for details.
+    library before building the Python Imaging Library. See the installation
+    documentation for details.
 
 PPM
 ^^^

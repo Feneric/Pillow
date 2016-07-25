@@ -64,10 +64,12 @@ class TestBoxBlur(PillowTestCase):
         self.assertRaises(ValueError, self.box_blur, sample.convert("P"))
         self.box_blur(sample.convert("L"))
         self.box_blur(sample.convert("LA"))
+        self.box_blur(sample.convert("LA").convert("La"))
         self.assertRaises(ValueError, self.box_blur, sample.convert("I"))
         self.assertRaises(ValueError, self.box_blur, sample.convert("F"))
         self.box_blur(sample.convert("RGB"))
         self.box_blur(sample.convert("RGBA"))
+        self.box_blur(sample.convert("RGBA").convert("RGBa"))
         self.box_blur(sample.convert("CMYK"))
         self.assertRaises(ValueError, self.box_blur, sample.convert("YCbCr"))
 
@@ -231,5 +233,3 @@ class TestBoxBlur(PillowTestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-# End of file

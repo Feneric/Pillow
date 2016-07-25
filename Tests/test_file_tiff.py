@@ -287,7 +287,7 @@ class TestFileTiff(PillowTestCase):
             ifd = TiffImagePlugin.ImageFileDirectory_v2()
             data = b"abc"
             ret = ifd.load_byte(data, legacy_api)
-            self.assertEqual(ret, b"abc" if legacy_api else (97, 98, 99))
+            self.assertEqual(ret, b"abc")
 
     def test_load_string(self):
         ifd = TiffImagePlugin.ImageFileDirectory_v2()
@@ -463,8 +463,13 @@ class TestFileTiff(PillowTestCase):
         im2 = hopper()
         self.assert_image_similar(im, im2, 5)
 
+    def test_open_tiff_uint16(self):
+        # Test an image of all '0' values
+        pixel_value = 0x1234
+        infile = "Tests/images/uint16_1_4660.tif"
+        im = Image.open(infile)
+        self.assertEqual(im.getpixel((0, 0)), pixel_value)
+
 
 if __name__ == '__main__':
     unittest.main()
-
-# End of file
